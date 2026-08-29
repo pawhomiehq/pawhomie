@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>PawHomie</title>
+<link rel="icon" type="image/png" href="assets/img/favicon.png">
+<meta name="theme-color" content="#21706F">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div class="backdrop"><span class="blob b1"></span><span class="blob b2"></span></div>
+
+<div id="app">
+  <!-- desktop top nav (hidden on mobile) -->
+  <header id="topnav" class="topnav"></header>
+  <!-- routed page content -->
+  <main id="view"></main>
+  <!-- mobile bottom tab bar (hidden on desktop) -->
+  <nav id="tabbar" class="tabbar"></nav>
+</div>
+
+<!-- global overlays -->
+<div class="sheet-bg" id="sheetBg"></div>
+<div class="sheet" id="sheet"></div>
+<div class="callover" id="callover"></div>
+<div class="toast" id="toast"></div>
+<div class="puppy" id="puppy" aria-hidden="true"></div>
+
+<!-- scripts (no build step; plain globals so it runs from file:// too) -->
+<!-- Supabase client (must load before config.js + data.js) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/quiz-data.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/roles.js"></script>
+<script src="assets/js/pages/welcome.js"></script>
+<script src="assets/js/pages/auth.js"></script>
+<script src="assets/js/pages/search.js"></script>
+<script src="assets/js/pages/favorites.js"></script>
+<script src="assets/js/pages/bookings.js"></script>
+<script src="assets/js/pages/profile.js"></script>
+<script src="assets/js/pages/booking.js"></script>
+<script src="assets/js/pages/payment.js"></script>
+<script src="assets/js/pages/confirmation.js"></script>
+<script src="assets/js/pages/dashboard.js"></script>
+<script src="assets/js/pages/messages.js"></script>
+<script src="assets/js/pages/chat.js"></script>
+<script src="assets/js/pages/petProfile.js"></script>
+<script src="assets/js/pages/bookingDetail.js"></script>
+<script src="assets/js/pages/review.js"></script>
+<script src="assets/js/pages/sitterDashboard.js"></script>
+<script src="assets/js/pages/sitterReviews.js"></script>
+<script src="assets/js/pages/services.js"></script>
+<script src="assets/js/pages/availability.js"></script>
+<script src="assets/js/pages/requests.js"></script>
+<script src="assets/js/pages/verification.js"></script>
+<script src="assets/js/pages/ownerVerification.js"></script>
+<script src="assets/js/pages/admin.js"></script>
+<script src="assets/js/pages/payouts.js"></script>
+<script src="assets/js/pages/notifications.js"></script>
+<script src="assets/js/pages/settings.js"></script>
+<script src="assets/js/video.js"></script>
+<script src="assets/js/router.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
