@@ -24,7 +24,11 @@ window.CONFIG = {
   // Sales tax. Ontario HST is 13% (5% federal GST + 8% provincial) in 2026.
   // Applied to (subtotal + service fee). Change this one number to update everywhere.
   TAX_RATE: 0.13,
-  TAX_LABEL: 'HST (13%)'
+  TAX_LABEL: 'HST (13%)',
+
+  // Stripe publishable key (safe to expose — it's the public half).
+  // Test key starts with pk_test_, live key with pk_live_.
+  STRIPE_PUBLISHABLE_KEY: 'pk_test_51U8uzoHaSru9fsWpgu5hUKfOwp8yG2fgdNLduLl38GidA5GjXCQXst2FMC39IVo7jDhqtnyZqUbAYffyF0of9rPC004MBgVm4u'
 };
 
 /* Until you paste real values above, the app runs on mock data so the

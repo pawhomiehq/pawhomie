@@ -297,7 +297,7 @@ window.db = {
     var user = await this.currentUser();
     if (!user) return null;
     var res = await sb.from('profiles')
-      .select('id, full_name, initial, avatar_gold, is_owner, is_sitter, is_admin, city')
+      .select('id, full_name, initial, avatar_gold, photo_url, is_owner, is_sitter, is_admin, city')
       .eq('id', user.id).maybeSingle();
     if (res.error) { console.error('getProfile:', res.error.message); return null; }
     if (!res.data) {
@@ -309,7 +309,7 @@ window.db = {
         id: user.id,
         full_name: name,
         is_owner: true, is_sitter: false, is_admin: false
-      }).select('id, full_name, initial, avatar_gold, is_owner, is_sitter, is_admin, city').single();
+      }).select('id, full_name, initial, avatar_gold, photo_url, is_owner, is_sitter, is_admin, city').single();
       if (ins.error) { console.error('getProfile backfill:', ins.error.message); return null; }
       window.App.profile = ins.data;
       return ins.data;
@@ -431,6 +431,50 @@ window.db = {
       .eq('conversation_id', conversationId).is('read_at', null).neq('sender_id', user.id);
   },
 
+  /* Persist the user's chosen area to their profile. */
+  async saveArea(city) {
+    if (!LIVE()) { if (window.MOCK.session) window.MOCK.session.city = city; return { ok:true }; }
+    var user = await this.currentUser();
+    if (!user) return { ok:false };
+    var res = await sb.from('profiles').update({ city: city }).eq('id', user.id);
+    if (res.error) { console.error('saveArea:', res.error.message); return { ok:false }; }
+    return { ok:true };
+  },
+
+  /* Update editable profile fields (name, city). */
+  async updateProfile(fields) {
+    if (!LIVE()) {
+      if (window.MOCK.session) Object.assign(window.MOCK.session, fields);
+      return { ok:true };
+    }
+    var user = await this.currentUser();
+    if (!user) throw new Error('Please sign in first.');
+    var patch = {};
+    if (fields.full_name != null) patch.full_name = fields.full_name;
+    if (fields.city != null) patch.city = fields.city;
+    if (fields.photo_url != null) patch.photo_url = fields.photo_url;
+    var res = await sb.from('profiles').update(patch).eq('id', user.id);
+    if (res.error) throw res.error;
+    if (window.App.profile) Object.assign(window.App.profile, patch);
+    return { ok:true };
+  },
+
+  /* Upload a profile picture to the public avatars bucket, returns its URL. */
+  async uploadAvatar(file) {
+    if (!LIVE()) return { url: (typeof URL!=='undefined'&&URL.createObjectURL)?URL.createObjectURL(file):'' };
+    var user = await this.currentUser();
+    if (!user) throw new Error('Please sign in first.');
+    var ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    var path = user.id + '/avatar.' + ext;
+    var up = await sb.storage.from('avatars').upload(path, file, { upsert:true, contentType:file.type });
+    if (up.error) throw up.error;
+    var pub = sb.storage.from('avatars').getPublicUrl(path);
+    var url = pub.data ? pub.data.publicUrl : '';
+    // cache-bust so the new image shows immediately
+    if (url) url = url + '?t=' + Date.now();
+    return { url: url };
+  },
+
   /* Reviews about the logged-in sitter (so they can reply). */
   async getMyReviews() {
     if (!LIVE()) return window.MOCK.myReviews || [];
@@ -540,18 +584,43 @@ window.db = {
   async getMessages(conversationId) {
     if (!LIVE()) return [];
     var res = await sb.from('messages')
-      .select('id, body, sender_id, created_at')
+      .select('id, body, image_url, sender_id, created_at')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending:true });
     if (res.error) { console.error('getMessages:', res.error.message); return []; }
     return res.data || [];
   },
 
-  async sendMessage(text, conversationId) {
+  async sendMessage(text, conversationId, imageUrl) {
     if (!LIVE()) return { ok:true, mock:true };
     var user = await this.currentUser();
     if (!user) throw new Error('Please sign in to send a message.');
-    var res = await sb.from('messages').insert({ conversation_id: conversationId, sender_id: user.id, body: text });
+    var row = { conversation_id: conversationId, sender_id: user.id, body: text || '' };
+    if (imageUrl) row.image_url = imageUrl;
+    var res = await sb.from('messages').insert(row);
+    if (res.error) throw res.error;
+    return { ok:true };
+  },
+
+  async uploadChatImage(file, conversationId) {
+    if (!LIVE()) return { url:'' };
+    var user = await this.currentUser();
+    if (!user) throw new Error('Please sign in first.');
+    var ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    var path = user.id + '/' + conversationId + '-' + Date.now() + '.' + ext;
+    var up = await sb.storage.from('chat-images').upload(path, file, { upsert:true, contentType:file.type });
+    if (up.error) throw up.error;
+    var pub = sb.storage.from('chat-images').getPublicUrl(path);
+    return { url: pub.data ? pub.data.publicUrl : '' };
+  },
+
+  /* Google sign-in (needs Google enabled in Supabase → Auth → Providers). */
+  async signInWithGoogle() {
+    if (!LIVE()) throw new Error('Google sign-in needs a live connection.');
+    var res = await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + window.location.pathname }
+    });
     if (res.error) throw res.error;
     return { ok:true };
   },
@@ -1200,6 +1269,44 @@ window.db = {
     return { ok:true };
   },
 
+  /* ---- Stripe payments (via secure Edge Functions) ---- */
+
+  // Create a PaymentIntent that HOLDS the funds. Returns { clientSecret, id }.
+  async createPaymentHold(amount, bookingId, description) {
+    if (!LIVE()) return { clientSecret:'mock', id:'pi_mock' };
+    var res = await sb.functions.invoke('create-payment', {
+      body: { amount: amount, currency: 'cad', bookingId: bookingId, description: description }
+    });
+    if (res.error) throw new Error(res.error.message || 'Payment setup failed');
+    if (res.data && res.data.error) throw new Error(res.data.error);
+    return res.data;
+  },
+
+  // Save the payment intent + mark the booking as held.
+  async attachPaymentToBooking(bookingId, intentId) {
+    if (!LIVE()) return { ok:true };
+    var res = await sb.from('bookings')
+      .update({ payment_intent_id: intentId, payment_status: 'held' })
+      .eq('id', bookingId);
+    if (res.error) throw res.error;
+    return { ok:true };
+  },
+
+  // Capture (release) or cancel a held payment. action: 'capture' | 'cancel'.
+  async settlePayment(bookingId, intentId, action) {
+    if (!LIVE()) return { ok:true };
+    var res = await sb.functions.invoke('capture-payment', {
+      body: { paymentIntentId: intentId, action: action }
+    });
+    if (res.error) throw new Error(res.error.message || 'Payment update failed');
+    if (res.data && res.data.error) throw new Error(res.data.error);
+    var patch = action === 'cancel'
+      ? { payment_status: 'refunded' }
+      : { payment_status: 'paid', paid_at: new Date().toISOString() };
+    await sb.from('bookings').update(patch).eq('id', bookingId);
+    return { ok:true };
+  },
+
   async createBooking(payload) {
     if (!LIVE()) return { ok:true, mock:true };
     var user = await this.currentUser();
@@ -1224,6 +1331,20 @@ window.db = {
     if (!LIVE()) return { ok:true };
     var res = await sb.from('bookings').update({ status: status }).eq('id', id);
     if (res.error) throw res.error;
+
+    // Settle the held payment when the booking reaches a final state.
+    try {
+      if (status === 'completed' || status === 'cancelled' || status === 'declined') {
+        var b = await sb.from('bookings').select('payment_intent_id, payment_status').eq('id', id).single();
+        var pi = b.data && b.data.payment_intent_id;
+        var ps = b.data && b.data.payment_status;
+        if (pi && ps === 'held') {
+          var action = (status === 'completed') ? 'capture' : 'cancel';
+          await this.settlePayment(id, pi, action);
+        }
+      }
+    } catch(e){ console.error('settle on status change:', e.message); }
+
     return { ok:true };
   },
 
