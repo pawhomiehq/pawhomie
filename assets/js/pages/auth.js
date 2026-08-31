@@ -61,6 +61,11 @@ Pages.signup = {
     <div id="authError" class="authError" style="display:none"></div>
 
     <button class="btn anim d3" id="authBtn">${isSignup ? 'Create account' : 'Log in'}</button>
+    <div class="or-divider anim d3"><span>or</span></div>
+    <button class="btn ghost google-btn anim d3" id="googleBtn">
+      <svg width="17" height="17" viewBox="0 0 18 18" style="vertical-align:-3px;margin-right:8px"><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.4h4.8a4.1 4.1 0 0 1-1.8 2.7v2.2h2.9c1.7-1.6 2.7-3.9 2.7-6.5z"/><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 6-2.2l-2.9-2.2c-.8.5-1.8.9-3.1.9-2.4 0-4.4-1.6-5.1-3.8H.9v2.3A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.9 10.7a5.4 5.4 0 0 1 0-3.4V5H.9a9 9 0 0 0 0 8l3-2.3z"/><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.5 3.4 1.3l2.6-2.6A9 9 0 0 0 .9 5l3 2.3C4.6 5.2 6.6 3.6 9 3.6z"/></svg>
+      Continue with Google
+    </button>
 
     <p class="muted anim d3" style="text-align:center;margin-top:14px;font-size:13px">
       ${isSignup ? 'Already have an account?' : 'New here?'}
@@ -94,6 +99,13 @@ Pages.signup = {
 
     var btn = document.getElementById('authBtn');
     if (btn) btn.addEventListener('click', submit);
+
+    var gbtn = document.getElementById('googleBtn');
+    if (gbtn) gbtn.addEventListener('click', async function(){
+      gbtn.disabled = true;
+      try { await db.signInWithGoogle(); }  // redirects to Google
+      catch(e){ gbtn.disabled = false; UI.toast(e.message || 'Google sign-in unavailable — enable it in Supabase'); }
+    });
 
     var forgot = document.getElementById('forgotLink');
     if (forgot) forgot.addEventListener('click', async function(){
@@ -141,7 +153,7 @@ async function submit() {
   // validation
   if (isSignup && !name)            return showErr('Please enter your name.');
   if (isSignup && !city)            return showErr('Please choose your area.');
-  if (!email || email.indexOf('@') < 1) return showErr('Please enter a valid email address.');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return showErr('Please enter a valid email address.');
   if (pass.length < 6)              return showErr('Password must be at least 6 characters.');
 
   btn.disabled = true;
@@ -154,7 +166,7 @@ async function submit() {
       if (res.needsConfirm) {
         btn.disabled = false;
         btn.textContent = 'Create account';
-        return showErr('Almost there — check your inbox and click the confirmation link, then log in.');
+        return showErr('Check your email to confirm your account. We sent a link to ' + email + ' — click it, then log in. (Use a real email address you can open.)');
       }
 
       await db.setRole(AUTH.role);

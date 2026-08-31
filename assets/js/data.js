@@ -238,6 +238,11 @@ window.db = {
     }
     var res = await sb.auth.signInWithPassword({ email: email, password: password });
     if (res.error) throw res.error;
+    // Block unconfirmed emails from getting a working session.
+    if (res.data.user && !res.data.user.email_confirmed_at && !res.data.user.confirmed_at){
+      await sb.auth.signOut();
+      throw new Error('Please confirm your email first — check your inbox for the link we sent.');
+    }
     window.App.user = res.data.user;
     // If they signed up under email-confirmation, write the stashed name/city now.
     if (window.PENDING_PROFILE && res.data.user){
@@ -271,19 +276,26 @@ window.db = {
 
   async currentUser() {
     if (!LIVE()) return window.MOCK.session ? { id:'mock-user', email:'you@demo.pawhomie.com' } : null;
-    // Prefer the user we already captured at sign-in (avoids a flaky network call).
-    if (window.App.user && window.App.user.id) return window.App.user;
-    // Then the locally-stored session (no network).
-    try {
-      var s = await sb.auth.getSession();
-      if (s && s.data && s.data.session && s.data.session.user){
-        window.App.user = s.data.session.user;
-        return window.App.user;
+    var u = null;
+    if (window.App.user && window.App.user.id) {
+      u = window.App.user;
+    } else {
+      try {
+        var s = await sb.auth.getSession();
+        if (s && s.data && s.data.session && s.data.session.user) u = s.data.session.user;
+      } catch(e){ /* fall through */ }
+      if (!u) {
+        var res = await sb.auth.getUser();
+        u = (res.data && res.data.user) || null;
       }
-    } catch(e){ /* fall through */ }
-    var res = await sb.auth.getUser();
-    window.App.user = (res.data && res.data.user) || null;
-    return window.App.user;
+    }
+    // An unconfirmed email is NOT a logged-in user. Treat as guest.
+    if (u && !u.email_confirmed_at && !u.confirmed_at) {
+      window.App.user = null;
+      return null;
+    }
+    window.App.user = u;
+    return u;
   },
 
   /* Read the signed-in user's profile row (name, role flags). */
