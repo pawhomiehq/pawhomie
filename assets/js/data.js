@@ -252,6 +252,13 @@ window.db = {
     return { ok:true, user:res.data.user };
   },
 
+  async resendConfirmation(email) {
+    if (!LIVE()) return { ok:true };
+    var res = await sb.auth.resend({ type:'signup', email: email });
+    if (res.error) throw res.error;
+    return { ok:true };
+  },
+
   async sendPasswordReset(email) {
     if (!LIVE()) return { ok:true };
     var redirect = (typeof location !== 'undefined') ? location.origin + location.pathname : undefined;

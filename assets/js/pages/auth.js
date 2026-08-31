@@ -164,9 +164,8 @@ async function submit() {
       var res = await db.signUp(email, pass, name, city);
 
       if (res.needsConfirm) {
-        btn.disabled = false;
-        btn.textContent = 'Create account';
-        return showErr('Check your email to confirm your account. We sent a link to ' + email + ' — click it, then log in. (Use a real email address you can open.)');
+        showConfirmScreen(email);
+        return;
       }
 
       await db.setRole(AUTH.role);
@@ -207,4 +206,36 @@ function afterAuth(fallback){
   window.RETURN_TO = null;
   if (want && window.ACCESS && Role.can(window.ACCESS[want] || 'user')) return want;
   return fallback;
+}
+
+/* A clear "check your email" screen shown right after signup, so it never
+   feels like nothing happened. */
+function showConfirmScreen(email){
+  var view = document.getElementById('view');
+  if (!view) return;
+  view.innerHTML =
+    '<div class="page narrow" style="text-align:center;padding-top:40px">' +
+      '<div style="font-size:52px;margin-bottom:8px">📬</div>' +
+      '<h1 style="font-size:22px;font-weight:900;color:var(--teal-dk);margin-bottom:8px">Confirm your email</h1>' +
+      '<p class="muted" style="font-size:14px;line-height:1.55;max-width:320px;margin:0 auto 6px">' +
+        'We sent a confirmation link to<br><b style="color:var(--ink)">' + email + '</b></p>' +
+      '<p class="muted" style="font-size:13.5px;line-height:1.55;max-width:320px;margin:0 auto 22px">' +
+        'Open it and click the link, then come back and log in. Your account isn\'t active until you confirm.</p>' +
+      '<button class="btn" id="cs-login" style="max-width:280px;margin:0 auto">I\'ve confirmed — log in</button>' +
+      '<button class="btn ghost" id="cs-resend" style="max-width:280px;margin:10px auto 0">Resend the email</button>' +
+      '<p class="muted" style="font-size:12px;margin-top:18px">Wrong address? <a id="cs-back" style="color:var(--teal);cursor:pointer;font-weight:700">Go back</a></p>' +
+    '</div>';
+  document.getElementById('cs-login').addEventListener('click', function(){
+    if (window.AUTH) window.AUTH.mode = 'login';
+    Router.go('signup');
+  });
+  document.getElementById('cs-back').addEventListener('click', function(){
+    if (window.AUTH) window.AUTH.mode = 'signup';
+    Router.go('signup');
+  });
+  document.getElementById('cs-resend').addEventListener('click', async function(){
+    this.disabled = true; this.textContent = 'Sending…';
+    try { await db.resendConfirmation(email); UI.toast('Sent! Check your inbox'); this.textContent = 'Email resent ✓'; }
+    catch(e){ this.disabled = false; this.textContent = 'Resend the email'; UI.toast(e.message || 'Could not resend'); }
+  });
 }
