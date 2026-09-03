@@ -296,11 +296,9 @@ window.db = {
         u = (res.data && res.data.user) || null;
       }
     }
-    // An unconfirmed email is NOT a logged-in user. Treat as guest.
-    if (u && !u.email_confirmed_at && !u.confirmed_at) {
-      window.App.user = null;
-      return null;
-    }
+    // Note: confirmation is enforced at signIn (where we have the full user
+    // object). We do NOT re-check here — session-restored user objects can omit
+    // email_confirmed_at, which would wrongly log confirmed users out.
     window.App.user = u;
     return u;
   },
