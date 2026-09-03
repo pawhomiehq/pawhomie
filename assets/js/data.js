@@ -1289,10 +1289,36 @@ window.db = {
   /* ---- Stripe payments (via secure Edge Functions) ---- */
 
   // Create a PaymentIntent that HOLDS the funds. Returns { clientSecret, id }.
-  async createPaymentHold(amount, bookingId, description) {
+  /* ---- Stripe Connect (sitter payouts) ---- */
+
+  // Start (or resume) sitter payout onboarding. Returns a Stripe-hosted URL.
+  async startPayoutOnboarding() {
+    if (!LIVE()) return { url:'' };
+    var sid = await this.mySitterId();
+    if (!sid) throw new Error('Set up your sitter profile first.');
+    var user = await this.currentUser();
+    var res = await sb.functions.invoke('connect-onboarding', {
+      body: { sitterProfileId: sid, email: user ? user.email : '', returnUrl: window.location.origin + window.location.pathname }
+    });
+    if (res.error) throw new Error(res.error.message || 'Could not start payout setup');
+    if (res.data && res.data.error) throw new Error(res.data.error);
+    return res.data;
+  },
+
+  // Check if the sitter finished onboarding + can receive payouts.
+  async checkPayoutStatus() {
+    if (!LIVE()) return { payoutsEnabled:false };
+    var sid = await this.mySitterId();
+    if (!sid) return { payoutsEnabled:false };
+    var res = await sb.functions.invoke('connect-status', { body: { sitterProfileId: sid } });
+    if (res.error) return { payoutsEnabled:false };
+    return res.data || { payoutsEnabled:false };
+  },
+
+  async createPaymentHold(amount, bookingId, description, sitterProfileId) {
     if (!LIVE()) return { clientSecret:'mock', id:'pi_mock' };
     var res = await sb.functions.invoke('create-payment', {
-      body: { amount: amount, currency: 'cad', bookingId: bookingId, description: description }
+      body: { amount: amount, currency: 'cad', bookingId: bookingId, description: description, sitterProfileId: sitterProfileId }
     });
     if (res.error) throw new Error(res.error.message || 'Payment setup failed');
     if (res.data && res.data.error) throw new Error(res.data.error);

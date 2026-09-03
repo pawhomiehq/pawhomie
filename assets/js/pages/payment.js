@@ -70,7 +70,7 @@ Pages.payment = {
       }
 
       try {
-        var hold = await db.createPaymentHold(q.total, bookingId, 'PawHomie stay with ' + s.name);
+        var hold = await db.createPaymentHold(q.total, bookingId, 'PawHomie stay with ' + s.name, s.id);
         clientSecret = hold.clientSecret; intentId = hold.id;
       } catch(e){
         err.textContent = e.message || 'Could not set up payment. Please try again.';
