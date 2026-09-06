@@ -1370,6 +1370,14 @@ window.db = {
     return { ok:true };
   },
 
+  /* Fire a notification email (best-effort; never blocks the action). */
+  async _notify(kind, userId, name, dates) {
+    if (!LIVE() || !userId) return;
+    try {
+      await sb.functions.invoke('notify', { body: { kind: kind, userId: userId, name: name || '', dates: dates || '' } });
+    } catch(e){ console.error('notify:', e.message); }
+  },
+
   async createBooking(payload) {
     if (!LIVE()) return { ok:true, mock:true };
     var user = await this.currentUser();
@@ -1387,6 +1395,16 @@ window.db = {
       note:       payload.note || null
     }).select().single();
     if (res.error) throw res.error;
+
+    // Notify the sitter of a new request (best-effort).
+    try {
+      var sp = await sb.from('sitter_profiles')
+        .select('profile:profiles!sitter_profiles_profile_id_fkey(id, full_name)')
+        .eq('id', payload.sitterId).single();
+      var sitterUser = sp.data && sp.data.profile;
+      if (sitterUser) this._notify('new_request', sitterUser.id, sitterUser.full_name, fmtRange(payload.startDate, payload.endDate));
+    } catch(e){ /* non-blocking */ }
+
     return { ok:true, booking:res.data };
   },
 
@@ -1396,17 +1414,26 @@ window.db = {
     if (res.error) throw res.error;
 
     // Settle the held payment when the booking reaches a final state.
+    var ownerId = null, ownerName = '', dates = '';
     try {
-      if (status === 'completed' || status === 'cancelled' || status === 'declined') {
-        var b = await sb.from('bookings').select('payment_intent_id, payment_status').eq('id', id).single();
-        var pi = b.data && b.data.payment_intent_id;
-        var ps = b.data && b.data.payment_status;
-        if (pi && ps === 'held') {
-          var action = (status === 'completed') ? 'capture' : 'cancel';
-          await this.settlePayment(id, pi, action);
-        }
+      var b = await sb.from('bookings')
+        .select('payment_intent_id, payment_status, start_date, end_date, owner:profiles!bookings_owner_id_fkey(id, full_name)')
+        .eq('id', id).single();
+      var pi = b.data && b.data.payment_intent_id;
+      var ps = b.data && b.data.payment_status;
+      if (b.data){
+        if (b.data.owner){ ownerId = b.data.owner.id; ownerName = b.data.owner.full_name; }
+        dates = fmtRange(b.data.start_date, b.data.end_date);
+      }
+      if (pi && ps === 'held') {
+        var action = (status === 'completed') ? 'capture' : 'cancel';
+        await this.settlePayment(id, pi, action);
       }
     } catch(e){ console.error('settle on status change:', e.message); }
+
+    // Notify the owner about the change (best-effort).
+    var kindMap = { accepted:'accepted', declined:'declined', completed:'completed', cancelled:'cancelled' };
+    if (kindMap[status] && ownerId) this._notify(kindMap[status], ownerId, ownerName, dates);
 
     return { ok:true };
   },
