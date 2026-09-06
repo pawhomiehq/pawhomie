@@ -161,7 +161,7 @@ async function submit() {
 
   try {
     if (isSignup) {
-      var res = await db.signUp(email, pass, name, city);
+      var res = await db.signUp(email, pass, name, city, AUTH.role);
 
       if (res.needsConfirm) {
         showConfirmScreen(email);

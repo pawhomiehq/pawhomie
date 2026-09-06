@@ -196,23 +196,20 @@ window.Booking = {
 window.db = {
 
   /* ---- auth ---- */
-  async signUp(email, password, fullName, city) {
+  async signUp(email, password, fullName, city, role) {
     if (!LIVE()) {
-      // mock: signing up logs you in (role set right after via setRole)
-      window.MOCK.session = { full_name: fullName || 'You', city: city || 'Toronto, ON', is_owner:true, is_sitter:false, is_admin:false };
+      window.MOCK.session = { full_name: fullName || 'You', city: city || 'Toronto, ON',
+        is_owner: role !== 'sitter', is_sitter: role === 'sitter' || role === 'both', is_admin:false };
       return { ok:true, mock:true };
     }
-    var res = await sb.auth.signUp({ email: email, password: password, options:{ data:{ full_name: fullName } } });
+    var res = await sb.auth.signUp({ email: email, password: password,
+      options:{ data:{ full_name: fullName, city: city, signup_role: role || 'owner' } } });
     if (res.error) throw res.error;
     window.App.user = res.data.user;
 
-    // If Supabase has "Confirm email" ON, there's no session yet — profile is
-    // written on first login instead (see ensureProfile).
     if (res.data.session && res.data.user){
       await this._writeProfile(res.data.user.id, { full_name: fullName, city: city });
-    } else {
-      // stash so we can write it right after they confirm + log in
-      window.PENDING_PROFILE = { full_name: fullName, city: city };
+      await this.setRole(role || 'owner');
     }
     return { ok:true, user:res.data.user, needsConfirm: !res.data.session };
   },
@@ -244,7 +241,30 @@ window.db = {
       throw new Error('Please confirm your email first — check your inbox for the link we sent.');
     }
     window.App.user = res.data.user;
-    // If they signed up under email-confirmation, write the stashed name/city now.
+
+    // First login after email confirmation: apply the name/city/role they chose
+    // at signup (stored in user metadata so it survives the confirmation gap).
+    if (res.data.user){
+      var meta = res.data.user.user_metadata || {};
+      // fetch current profile to see if role still needs applying
+      try {
+        var pr = await sb.from('profiles').select('is_sitter, is_owner, full_name, city').eq('id', res.data.user.id).maybeSingle();
+        var prof = pr.data;
+        // write name/city if missing
+        if (prof && (!prof.full_name || !prof.city) && (meta.full_name || meta.city)){
+          await this._writeProfile(res.data.user.id, { full_name: meta.full_name, city: meta.city });
+        }
+        // apply the chosen role once (if they picked sitter but profile is still the default owner-only)
+        if (meta.signup_role && prof){
+          var wantSitter = meta.signup_role === 'sitter' || meta.signup_role === 'both';
+          var mismatch = (wantSitter !== !!prof.is_sitter) || (meta.signup_role === 'sitter' && prof.is_owner);
+          if (mismatch){
+            await this.setRole(meta.signup_role);
+          }
+        }
+      } catch(e){ console.error('apply signup role:', e.message); }
+    }
+
     if (window.PENDING_PROFILE && res.data.user){
       await this._writeProfile(res.data.user.id, window.PENDING_PROFILE);
       window.PENDING_PROFILE = null;
