@@ -666,3 +666,22 @@ input[type="date"]{font-family:inherit}
 /* honest value cards in the landing quote-stack */
 .quote .qic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;
   background:var(--tint);color:var(--teal);margin-bottom:10px}
+
+/* legal pages */
+.legal{line-height:1.65;color:#3A4A47}
+.legal h2{font-size:16px;font-weight:900;color:var(--teal-dk);margin:22px 0 8px}
+.legal p{font-size:14px;margin:0 0 10px}
+.legal ul{margin:0 0 12px;padding-left:20px}
+.legal li{font-size:14px;margin:4px 0}
+.legal-updated{font-size:12.5px;color:var(--muted);background:#F3EEE6;padding:8px 12px;border-radius:10px;display:inline-block}
+.legal-disclaimer{margin-top:26px;padding:14px 16px;background:#FDF6E7;border:1px solid #EBD9A8;border-radius:12px;font-size:12.5px;color:#8A6D1E;font-weight:700;line-height:1.5}
+
+/* cookie banner */
+#cookieBar{position:fixed;left:0;right:0;bottom:0;z-index:9000;background:#14514C;color:#fff;
+  transform:translateY(110%);transition:transform .3s ease;padding:14px 16px}
+#cookieBar.show{transform:translateY(0)}
+.cookie-in{max-width:820px;margin:0 auto;display:flex;gap:16px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.cookie-txt{font-size:13px;font-weight:600;line-height:1.5;flex:1;min-width:220px}
+.cookie-link{color:#EBB042;text-decoration:underline;cursor:pointer;font-weight:800}
+.cookie-btns{display:flex;gap:8px;flex:none}
+@media(max-width:520px){.cookie-btns{width:100%}.cookie-btns .btn{flex:1}}

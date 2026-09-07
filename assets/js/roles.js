@@ -13,6 +13,8 @@
    ===================================================================== */
 
 window.ACCESS = {
+  privacy: 'public',
+  terms: 'public',
   /* --- anyone, logged in or not --- */
   welcome:        'public',
   search:         'public',   // browsing builds trust before signup
@@ -35,6 +37,7 @@ window.ACCESS = {
   bookings:       'owner',
   ownerVerification: 'owner',
   sitterReviews: 'sitter',
+  editProfile: 'user',
   petProfile:     'owner',
   review:         'owner',
 

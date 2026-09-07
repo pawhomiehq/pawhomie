@@ -15,7 +15,7 @@ window.Router = {
 
     // Admins are confined to the admin surface. Any consumer page bounces to the panel.
     if (Role.isAdmin()){
-      var ADMIN_OK = { admin:1, settings:1, welcome:1 };
+      var ADMIN_OK = { admin:1, settings:1, welcome:1, privacy:1, terms:1 };
       if (!ADMIN_OK[page]){ this.go('admin'); return; }
     }
 

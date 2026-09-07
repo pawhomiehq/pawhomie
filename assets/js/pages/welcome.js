@@ -231,6 +231,8 @@ Pages.welcome = {
           <a data-go="search">Find care</a>
           <a data-auth="signup">Become a Paw Homie</a>
           <a data-nav="faq">FAQ</a>
+          <a data-go="privacy">Privacy</a>
+          <a data-go="terms">Terms</a>
           <a href="mailto:support@pawhomie.com">support@pawhomie.com</a>
         </div>
         <div class="foot-note">\u00a9 2026 PawHomie \u00b7 Serving the Greater Toronto Area</div>
