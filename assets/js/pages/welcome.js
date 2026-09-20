@@ -147,6 +147,7 @@ Pages.welcome = {
         <h2>Every Paw Homie is checked before you ever meet them</h2>
         <ul class="ticks">
           <li>${UI.icon('check',16)}<span><b>Care quiz &amp; ID check.</b> Paw Homies pass a 10-question pet-care quiz and upload ID and photos of their home before approval.</span></li>
+          <li>${UI.icon('check',16)}<span><b>Insured stays \u2014 up to $2,500 CAD.</b> Eligible bookings paid through PawHomie include vet-care coverage of up to $2,500 CAD, so you're protected if the unexpected happens.</span></li>
           <li>${UI.icon('check',16)}<span><b>Payment held safely.</b> Money is only released to your Paw Homie once the stay is complete.</span></li>
           <li>${UI.icon('check',16)}<span><b>Real reviews only.</b> Reviews come from completed bookings \u2014 nobody can buy their way to five stars.</span></li>
           <li>${UI.icon('check',16)}<span><b>Message any time.</b> Chat lives in the app, so updates and photos stay in one place.</span></li>
@@ -162,6 +163,10 @@ Pages.welcome = {
           <div class="quote card">
             <div class="qic">${UI.icon('video',22)}</div>
             <p><b>Meet before you book.</b> Request a free 15-minute intro call with any Paw Homie, right from their profile.</p>
+          </div>
+          <div class="quote card" style="background:var(--tint);border:1px solid var(--teal)">
+            <div class="qic" style="background:var(--teal);color:#fff">${UI.icon('shield',22)}</div>
+            <p><b>Insured up to $2,500 CAD.</b> Every eligible stay booked and paid through PawHomie is covered for vet care up to $2,500 CAD \u2014 real peace of mind for your pet.</p>
           </div>
         </div>
       </div>

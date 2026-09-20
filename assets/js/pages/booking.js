@@ -18,6 +18,11 @@ Pages.booking = {
       <div class="card" style="padding:14px;text-align:center" class="muted">Loading your pets…</div>
     </div>
 
+    <div class="label anim d1" style="margin-top:18px">Which service?</div>
+    <div id="servicePick" class="anim d1">
+      <div class="card" style="padding:14px;text-align:center"><span class="muted" style="font-size:13px">Loading services…</span></div>
+    </div>
+
     <div class="label anim d1" style="margin-top:18px">Dates</div>
     <div class="card anim d1" style="padding:14px 16px">
       <div style="display:flex;gap:12px">
@@ -56,6 +61,7 @@ Pages.booking = {
   async mount() {
     var s = App.currentSitter;
     var B = Booking.state;
+    var chosenRate = s.rate;   // default to the sitter's "from" rate; updated by service picker
 
     // verification notice (soft gate — 48h grace)
     var note = document.getElementById('bkVerifyNote');
@@ -73,6 +79,40 @@ Pages.booking = {
           if (go) go.addEventListener('click', function(){ Router.go('ownerVerification'); });
         }
       } catch(e){ /* non-blocking */ }
+    }
+
+    /* ---- services (pick which one, charge that price) ---- */
+    var svcBox = document.getElementById('servicePick');
+    if (svcBox){
+      var labelFor = {};
+      (window.SERVICES||[]).forEach(function(x){ labelFor[x.id] = x.label; });
+      var svcList = [];
+      try { svcList = await db.getSitterServices(s.id); } catch(e){}
+      if (!svcList.length){
+        // no per-service data — fall back to a single "House sitting" at the sitter's rate
+        svcList = [{ kind:'house_sitting', price:s.rate }];
+      }
+      // pick the one matching what they searched, else the first
+      B.serviceKind = (B.serviceKind && svcList.some(function(x){return x.kind===B.serviceKind;}))
+        ? B.serviceKind
+        : (App.searchService && svcList.some(function(x){return x.kind===App.searchService;}) ? App.searchService : svcList[0].kind);
+      chosenRate = (svcList.find(function(x){return x.kind===B.serviceKind;})||svcList[0]).price;
+
+      svcBox.innerHTML = svcList.map(function(sv){
+        return '<div class="card svcOpt '+(sv.kind===B.serviceKind?'on':'')+'" data-svc="'+sv.kind+'" data-price="'+sv.price+'"'+
+          ' style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:8px">'+
+          '<span style="font-weight:800">'+(labelFor[sv.kind]||sv.kind)+'</span>'+
+          '<span style="font-weight:800;color:var(--teal-dk)">$'+sv.price+' <small class="muted">/night</small></span></div>';
+      }).join('');
+      svcBox.querySelectorAll('[data-svc]').forEach(function(el){
+        el.addEventListener('click', function(){
+          B.serviceKind = el.getAttribute('data-svc');
+          chosenRate = Number(el.getAttribute('data-price'));
+          svcBox.querySelectorAll('[data-svc]').forEach(function(x){ x.classList.remove('on'); });
+          el.classList.add('on');
+          if (typeof refresh === 'function') refresh();
+        });
+      });
     }
 
     /* ---- pets ---- */
@@ -122,14 +162,16 @@ Pages.booking = {
       err.style.display = 'none';
       document.getElementById('toPayment').disabled = false;
 
-      var q = Booking.quote(s.rate);
+      var q = Booking.quoteFor(chosenRate, start.value, end.value);
       var plural = q.nights > 1 ? 's' : '';
       document.getElementById('nightsLabel').textContent = q.nights + ' night' + plural;
-      document.getElementById('lineLabel').textContent   = Booking.money(s.rate) + ' × ' + q.nights + ' night' + plural;
+      document.getElementById('lineLabel').textContent   = Booking.money(chosenRate) + ' × ' + q.nights + ' night' + plural;
       document.getElementById('lineSub').textContent     = Booking.money(q.subtotal);
       document.getElementById('lineFee').textContent     = Booking.money(q.fee);
       document.getElementById('lineTax').textContent     = Booking.money(q.tax);
       document.getElementById('lineTotal').textContent   = Booking.money(q.total);
+      // remember the chosen rate so the payment page charges the same
+      B.rate = chosenRate;
     }
 
     start.addEventListener('change', refresh);

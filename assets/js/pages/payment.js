@@ -5,7 +5,8 @@
 Pages.payment = {
   render() {
     var s = App.currentSitter;
-    var q = Booking.quote(s.rate);
+    var rate = (Booking.state.rate != null ? Booking.state.rate : s.rate);
+    var q = Booking.quoteFor(rate, Booking.state.startDate, Booking.state.endDate);
     var plural = q.nights > 1 ? 's' : '';
 
     return `
@@ -21,7 +22,7 @@ Pages.payment = {
                <div class="muted" style="font-size:12px">${fmtRange(Booking.state.startDate, Booking.state.endDate)} · ${q.nights} night${plural}</div></div>
         </div>
       </div>
-      <div class="prow"><span class="m">${Booking.money(s.rate)} × ${q.nights} night${plural}</span><span>${Booking.money(q.subtotal)}</span></div>
+      <div class="prow"><span class="m">${Booking.money(rate)} × ${q.nights} night${plural}</span><span>${Booking.money(q.subtotal)}</span></div>
       <div class="prow"><span class="m">Service fee</span><span>${Booking.money(q.fee)}</span></div>
       <div class="prow"><span class="m">${q.taxLabel}</span><span>${Booking.money(q.tax)}</span></div>
       <div class="prow total"><span>Total due</span><span>${Booking.money(q.total)}</span></div>
@@ -50,7 +51,8 @@ Pages.payment = {
 
   async mount() {
     var s   = App.currentSitter;
-    var q   = Booking.quote(s.rate);
+    var rate = (Booking.state.rate != null ? Booking.state.rate : s.rate);
+    var q   = Booking.quoteFor(rate, Booking.state.startDate, Booking.state.endDate);
     var B   = Booking.state;
     var btn = document.getElementById('payBtn');
     var err = document.getElementById('payError');
@@ -64,7 +66,7 @@ Pages.payment = {
     if (stripeReady) {
       try {
         var made = await db.createBooking({
-          sitterId:s.id, petId:B.petId, startDate:B.startDate, endDate:B.endDate,
+          sitterId:s.id, petId:B.petId, kind:B.serviceKind, startDate:B.startDate, endDate:B.endDate,
           subtotal:q.subtotal, serviceFee:q.fee, tax:q.tax, total:q.total, note:B.note
         });
         bookingId = made.booking ? made.booking.id : null;
@@ -122,7 +124,7 @@ Pages.payment = {
           Router.go('confirmation');
         } else {
           var res = await db.createBooking({
-            sitterId:s.id, petId:B.petId, startDate:B.startDate, endDate:B.endDate,
+            sitterId:s.id, petId:B.petId, kind:B.serviceKind, startDate:B.startDate, endDate:B.endDate,
             subtotal:q.subtotal, serviceFee:q.fee, tax:q.tax, total:q.total, note:B.note
           });
           App.lastBooking = { quote:q, dates:{ start:B.startDate, end:B.endDate }, id: res.booking ? res.booking.id : null };

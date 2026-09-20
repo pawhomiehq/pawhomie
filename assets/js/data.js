@@ -1418,6 +1418,7 @@ window.db = {
       owner_id:   user.id,
       sitter_id:  payload.sitterId,
       pet_id:     payload.petId || null,
+      kind:       payload.kind || 'house_sitting',
       start_date: payload.startDate,
       end_date:   payload.endDate,
       subtotal:   payload.subtotal,
