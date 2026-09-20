@@ -25,14 +25,14 @@ Pages.booking = {
 
     <div class="label anim d1" style="margin-top:18px">Dates</div>
     <div class="card anim d1" style="padding:14px 16px">
-      <div style="display:flex;gap:12px">
-        <div style="flex:1">
+      <div class="date-row">
+        <div style="flex:1;min-width:0">
           <div class="muted" style="font-size:11.5px;font-weight:800;margin-bottom:6px">CHECK IN</div>
-          <input class="field" type="date" id="startDate" value="${B.startDate}" min="${new Date().toISOString().slice(0,10)}">
+          <input class="field" type="date" id="startDate" value="${B.startDate}" min="${new Date().toISOString().slice(0,10)}" style="width:100%;box-sizing:border-box">
         </div>
-        <div style="flex:1">
+        <div style="flex:1;min-width:0">
           <div class="muted" style="font-size:11.5px;font-weight:800;margin-bottom:6px">CHECK OUT</div>
-          <input class="field" type="date" id="endDate" value="${B.endDate}" min="${B.startDate}">
+          <input class="field" type="date" id="endDate" value="${B.endDate}" min="${B.startDate}" style="width:100%;box-sizing:border-box">
         </div>
       </div>
       <div class="muted" style="font-size:12.5px;font-weight:700;margin-top:10px" id="nightsLabel">${q.nights} night${q.nights>1?'s':''}</div>

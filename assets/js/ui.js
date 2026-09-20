@@ -74,10 +74,10 @@ function renderNav(active){
   /* ---- top nav ---- */
   var links = '';
   if (R.isGuest()){
-    links = '<a data-go="search">Find sitters</a>'+
-            '<a data-nav="services">Services</a>'+
-            '<a data-auth="signup">Become a Paw Homie</a>'+
-            '<a data-nav="faq">FAQ</a>'+
+    links = '<a data-go="search" class="nav-hide-mobile">Find sitters</a>'+
+            '<a data-nav="services" class="nav-hide-mobile">Services</a>'+
+            '<a data-auth="signup" class="nav-hide-mobile">Become a Paw Homie</a>'+
+            '<a data-nav="faq" class="nav-hide-mobile">FAQ</a>'+
             '<a data-auth="login" class="nav-cta">Log in / Sign up</a>';
   } else if (R.isAdmin()){
     // admin sees the panel only — no consumer app, no messages
@@ -85,22 +85,22 @@ function renderNav(active){
              '<a data-go="__logout" class="nav-logout">Log out</a>';
   } else if (R.isSitter() && !R.isOwner()){
     // pure Paw Homie
-    links += '<a data-go="sitterDashboard" class="'+(active==='sitterDashboard'?'on':'')+'">Home</a>'+
-             '<a data-go="requests" class="'+(active==='requests'?'on':'')+'">Requests</a>'+
-             '<a data-go="availability" class="'+(active==='availability'?'on':'')+'">Availability</a>'+
-             '<a data-go="messages" class="'+(active==='messages'?'on':'')+'">Messages</a>'+
-             '<a data-go="settings" class="'+(active==='settings'?'on':'')+'">Account</a>';
+    links += '<a data-go="sitterDashboard" class="nav-hide-mobile '+(active==='sitterDashboard'?'on':'')+'">Home</a>'+
+             '<a data-go="requests" class="nav-hide-mobile '+(active==='requests'?'on':'')+'">Requests</a>'+
+             '<a data-go="availability" class="nav-hide-mobile '+(active==='availability'?'on':'')+'">Availability</a>'+
+             '<a data-go="messages" class="nav-hide-mobile '+(active==='messages'?'on':'')+'">Messages</a>'+
+             '<a data-go="settings" class="nav-hide-mobile '+(active==='settings'?'on':'')+'">Account</a>';
   } else {
     // owner (or someone who is both)
-    links += '<a data-go="dashboard" class="'+(active==='dashboard'?'on':'')+'">Home</a>'+
-             '<a data-go="search" class="'+(active==='search'?'on':'')+'">Search</a>'+
-             '<a data-go="bookings" class="'+(active==='bookings'?'on':'')+'">My bookings</a>'+
-             '<a data-go="favorites" class="'+(active==='favorites'?'on':'')+'">Favorites</a>';
+    links += '<a data-go="dashboard" class="nav-hide-mobile '+(active==='dashboard'?'on':'')+'">Home</a>'+
+             '<a data-go="search" class="nav-hide-mobile '+(active==='search'?'on':'')+'">Search</a>'+
+             '<a data-go="bookings" class="nav-hide-mobile '+(active==='bookings'?'on':'')+'">My bookings</a>'+
+             '<a data-go="favorites" class="nav-hide-mobile '+(active==='favorites'?'on':'')+'">Favorites</a>';
     if (R.isSitter()){
-      links += '<a data-go="sitterDashboard" class="'+(active==='sitterDashboard'?'on':'')+'">Paw Homie</a>';
+      links += '<a data-go="sitterDashboard" class="nav-hide-mobile '+(active==='sitterDashboard'?'on':'')+'">Paw Homie</a>';
     }
-    links += '<a data-go="messages" class="'+(active==='messages'?'on':'')+'">Messages</a>'+
-             '<a data-go="settings" class="'+(active==='settings'?'on':'')+'">Account</a>';
+    links += '<a data-go="messages" class="nav-hide-mobile '+(active==='messages'?'on':'')+'">Messages</a>'+
+             '<a data-go="settings" class="nav-hide-mobile '+(active==='settings'?'on':'')+'">Account</a>';
   }
 
   var tn = document.getElementById('topnav');
