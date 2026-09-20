@@ -31,6 +31,10 @@ Pages.payment = {
     <div id="cardElement" class="field anim d1" style="padding:14px 12px"></div>
     <div id="cardErrors" class="authError" style="display:none;margin-top:8px"></div>
 
+    <div class="label anim d1" style="margin-top:14px">Postal code</div>
+    <input class="field anim d1" id="postalCode" placeholder="A1A 1A1" autocomplete="postal-code" maxlength="7" style="text-transform:uppercase">
+    <div id="postalErr" class="authError" style="display:none;margin-top:8px"></div>
+
     <div class="card anim d2" style="padding:13px 15px;margin-top:18px;display:flex;gap:11px;align-items:flex-start;background:var(--tint)">
       <span style="color:var(--teal);flex:none;margin-top:1px">${UI.icon('lock',20)}</span>
       <div style="font-size:12.5px;color:var(--teal-dk);font-weight:700;line-height:1.45">
@@ -80,6 +84,7 @@ Pages.payment = {
       stripe = Stripe(CONFIG.STRIPE_PUBLISHABLE_KEY);
       var elements = stripe.elements();
       card = elements.create('card', {
+        hidePostalCode: true,   // Stripe's field says "ZIP" — we collect Canadian postal code ourselves
         style: { base: { fontSize:'16px', fontFamily:'Nunito, sans-serif', color:'#22302E',
                          '::placeholder':{ color:'#9AA6A3' } } }
       });
@@ -97,7 +102,20 @@ Pages.payment = {
 
       try {
         if (stripeReady) {
-          var result = await stripe.confirmCardPayment(clientSecret, { payment_method: { card: card } });
+          // Canadian postal code check
+          var postal = (document.getElementById('postalCode').value || '').trim().toUpperCase();
+          var postalOk = /^[A-Za-z]\d[A-Za-z][ ]?\d[A-Za-z]\d$/.test(postal);
+          var pErr = document.getElementById('postalErr');
+          if (!postalOk){
+            pErr.textContent = 'Please enter a valid Canadian postal code (e.g. M5V 3A8).';
+            pErr.style.display = 'block';
+            busy = false; btn.disabled = false; btn.textContent = 'Hold ' + Booking.money(q.total) + ' & request';
+            return;
+          }
+          pErr.style.display = 'none';
+          var result = await stripe.confirmCardPayment(clientSecret, {
+            payment_method: { card: card, billing_details: { address: { postal_code: postal, country: 'CA' } } }
+          });
           if (result.error) throw new Error(result.error.message);
           await db.attachPaymentToBooking(bookingId, intentId);
           App.lastBooking = { quote:q, dates:{ start:B.startDate, end:B.endDate }, id: bookingId };

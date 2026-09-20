@@ -97,7 +97,7 @@ Pages.welcome = {
       <div class="trust card" style="margin-top:14px">
         <div class="t"><div class="n">Verified</div><div class="l">ID &amp; care quiz</div></div>
         <div class="t"><div class="n">4.9\u2605</div><div class="l">avg rating</div></div>
-        <div class="t"><div class="n">Covered</div><div class="l">vet guarantee</div></div>
+        <div class="t"><div class="n">Up to $2,500</div><div class="l">CAD vet coverage</div></div>
       </div>
     </div>
    </div>

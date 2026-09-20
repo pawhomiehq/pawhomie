@@ -38,19 +38,22 @@ Pages.terms = {
       <h2>8. Reviews &amp; content</h2>
       <p>You keep ownership of content you post but grant PawHomie a licence to display it on the platform. Reviews must be genuine. We may remove content that is false, abusive, or breaks these Terms.</p>
 
-      <h2>9. Disclaimers &amp; liability</h2>
+      <h2>9. Insurance coverage</h2>
+      <p>Eligible bookings made and paid through PawHomie include limited vet-care coverage of <b>up to $2,500 CAD</b> per incident, subject to conditions. This coverage applies only to bookings arranged and paid through the platform, and does not replace the pet owner's own pet insurance. Full terms of the coverage will be provided.</p>
+
+      <h2>10. Disclaimers &amp; liability</h2>
       <p>PawHomie is provided "as is." To the extent permitted by law, we are not liable for the acts of owners or sitters, or for indirect or consequential damages. Nothing in these Terms limits rights that cannot be limited under applicable law.</p>
 
-      <h2>10. Payments processor</h2>
+      <h2>11. Payments processor</h2>
       <p>Payments and payouts are handled by Stripe and are subject to Stripe's terms. PawHomie does not store full card numbers.</p>
 
-      <h2>11. Changes</h2>
+      <h2>12. Changes</h2>
       <p>We may update these Terms. Continued use after changes means you accept the updated Terms.</p>
 
-      <h2>12. Governing law</h2>
+      <h2>13. Governing law</h2>
       <p>These Terms are governed by the laws of the Province of Ontario and applicable laws of Canada.</p>
 
-      <h2>13. Contact</h2>
+      <h2>14. Contact</h2>
       <p>Questions? Email <a href="mailto:support@pawhomie.com">support@pawhomie.com</a>.</p>
 
       <div class="legal-disclaimer">This is a working draft provided for convenience and must be reviewed and approved by a qualified lawyer before launch. It is not legal advice.</div>

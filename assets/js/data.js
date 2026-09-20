@@ -94,6 +94,14 @@ if (window.USE_SUPABASE && window.supabase) {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'pawhomie-auth' }
   });
   console.log('PawHomie: connected to Supabase');
+  // When the user clicks the reset link in their email, Supabase fires this.
+  try {
+    window.sb.auth.onAuthStateChange(function(event){
+      if (event === 'PASSWORD_RECOVERY'){
+        location.hash = '#/resetPassword';
+      }
+    });
+  } catch(e){}
 } else {
   console.log('PawHomie: running on DEMO data (no Supabase keys in config.js)');
   // Make it impossible to miss that this is not real data.
@@ -281,7 +289,7 @@ window.db = {
 
   async sendPasswordReset(email) {
     if (!LIVE()) return { ok:true };
-    var redirect = (typeof location !== 'undefined') ? location.origin + location.pathname : undefined;
+    var redirect = (typeof location !== 'undefined') ? location.origin + location.pathname + '#/resetPassword' : undefined;
     var res = await sb.auth.resetPasswordForEmail(email, redirect ? { redirectTo: redirect } : undefined);
     if (res.error) throw res.error;
     return { ok:true };
@@ -528,6 +536,16 @@ window.db = {
     });
   },
 
+  /* A sitter's enabled services with their individual prices (for their public profile). */
+  async getSitterServices(sitterProfileId) {
+    if (!LIVE()) return [];
+    var res = await sb.from('services')
+      .select('kind, price, enabled')
+      .eq('sitter_id', sitterProfileId).eq('enabled', true);
+    if (res.error){ console.error('getSitterServices:', res.error.message); return []; }
+    return (res.data||[]).map(function(s){ return { kind:s.kind, price:Number(s.price) }; });
+  },
+
   /* Reviews shown on a sitter's public profile (with any provider reply). */
   async getSitterReviews(sitterProfileId) {
     if (!LIVE()) return window.MOCK.sitterReviews || [];
@@ -726,7 +744,15 @@ window.db = {
     var res = await sb.from('pets')
       .select('id, name, species, breed, age_years, notes, friendly_with_pets, needs_medication, microchipped, vaccination_doc, vaccination_status, vaccination_note')
       .eq('owner_id', user.id).order('created_at');
-    if (res.error) { console.error('getPets:', res.error.message); return []; }
+    if (res.error) {
+      console.error('getPets (full):', res.error.message);
+      // fall back to core columns so a missing optional column never hides pets
+      var basic = await sb.from('pets')
+        .select('id, name, species, breed, age_years, notes')
+        .eq('owner_id', user.id).order('created_at');
+      if (basic.error){ console.error('getPets (basic):', basic.error.message); return []; }
+      return basic.data || [];
+    }
     return res.data || [];
   },
 
@@ -931,13 +957,14 @@ window.db = {
     }
     var sid = await this.mySitterId();
     if (!sid) throw new Error('Set up your Paw Homie profile first.');
-    var res = await sb.from('sitter_profiles').update({
-      phone:     details.phone || null,
-      address:   details.address || null,
-      home_type: details.home_type || null,
-      has_yard:  !!details.has_yard,
-      documents: details.documents || {}
-    }).eq('id', sid);
+    var patch = {};
+    if (details.phone !== undefined)     patch.phone = details.phone || null;
+    if (details.address !== undefined)   patch.address = details.address || null;
+    if (details.home_type !== undefined) patch.home_type = details.home_type || null;
+    if (details.has_yard !== undefined)  patch.has_yard = !!details.has_yard;
+    if (details.documents !== undefined) patch.documents = details.documents || {};
+    if (!Object.keys(patch).length) return { ok:true };   // nothing to change — never wipe
+    var res = await sb.from('sitter_profiles').update(patch).eq('id', sid);
     if (res.error) throw res.error;
     return { ok:true };
   },
@@ -1320,7 +1347,12 @@ window.db = {
     var res = await sb.functions.invoke('connect-onboarding', {
       body: { sitterProfileId: sid, email: user ? user.email : '', returnUrl: window.location.origin + window.location.pathname }
     });
-    if (res.error) throw new Error(res.error.message || 'Could not start payout setup');
+    // Try to pull the real error message out of the function's response body.
+    if (res.error) {
+      var detail = '';
+      try { if (res.error.context && res.error.context.json) { var j = await res.error.context.json(); detail = j.error || ''; } } catch(e){}
+      throw new Error(detail || res.error.message || 'Payout setup is not available yet. Please try again shortly.');
+    }
     if (res.data && res.data.error) throw new Error(res.data.error);
     return res.data;
   },
@@ -1452,6 +1484,7 @@ window.db = {
       .eq('id', id).single();
     if (res.error){ console.error('getBooking:', res.error.message); return null; }
     var b = res.data, p = b.sitter && b.sitter.profile ? b.sitter.profile : {};
+    var nights = Math.max(1, Math.round((new Date(b.end_date) - new Date(b.start_date)) / 86400000));
     return {
       id: b.id,
       sitterProfileId: b.sitter ? b.sitter.id : null,
@@ -1460,6 +1493,8 @@ window.db = {
       gold: !!p.avatar_gold,
       petName: b.pet ? b.pet.name : '',
       startDate: b.start_date, endDate: b.end_date,
+      nights: nights,
+      rate: Math.round((Number(b.subtotal) / nights) * 100) / 100,
       subtotal: Number(b.subtotal), fee: Number(b.service_fee),
       tax: Number(b.tax || 0), total: Number(b.total),
       status: b.status, note: b.note, createdAt: b.created_at,

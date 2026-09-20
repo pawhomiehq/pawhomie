@@ -82,8 +82,13 @@ function renderBooking(host, b){
 
   // actions depend on status
   var actions = '';
-  if (b.status === 'pending' || b.status === 'accepted'){
+  if (b.status === 'pending'){
     actions = `<button class="btn" id="msgBtn">Message ${first}</button>
+               <button class="btn ghost" id="rescheduleBtn" style="margin-top:12px">Change dates</button>
+               <button class="btn ghost" id="cancelBtn" style="margin-top:12px;color:var(--danger)">Cancel booking</button>`;
+  } else if (b.status === 'accepted'){
+    actions = `<button class="btn" id="completeBtn">Mark stay complete</button>
+               <button class="btn ghost" id="msgBtn" style="margin-top:12px">Message ${first}</button>
                <button class="btn ghost" id="rescheduleBtn" style="margin-top:12px">Change dates</button>
                <button class="btn ghost" id="cancelBtn" style="margin-top:12px;color:var(--danger)">Cancel booking</button>`;
   } else if (b.status === 'completed'){
@@ -150,6 +155,21 @@ function renderBooking(host, b){
     showRescheduleModal(b, first);
   });
 
+  var completeBtn = document.getElementById('completeBtn');
+  if (completeBtn) completeBtn.addEventListener('click', async function(){
+    if (!confirm('Mark this stay as complete? This will release payment to ' + first + '.')) return;
+    completeBtn.disabled = true; completeBtn.textContent = 'Completing…';
+    try {
+      await db.setBookingStatus(b.id, 'completed');
+      UI.toast('Stay marked complete \uD83D\uDC3E');
+      Router.go('bookingDetail');
+    } catch(e){
+      completeBtn.disabled = false; completeBtn.textContent = 'Mark stay complete';
+      var err = document.getElementById('bdErr');
+      if (err){ err.textContent = e.message || 'Could not complete. Please try again.'; err.style.display = 'block'; }
+    }
+  });
+
   var cancelBtn = document.getElementById('cancelBtn');
   if (cancelBtn) cancelBtn.addEventListener('click', async function(){
     if (!confirm('Cancel this booking with ' + first + '?')) return;
@@ -195,7 +215,7 @@ function showRescheduleModal(b, first){
     if (!s || !e || e <= s){ err.textContent = 'Pick-up must be after drop-off.'; err.style.display='block'; return; }
     this.disabled = true; this.textContent = 'Saving…';
     try {
-      await db.rescheduleBooking(b.id, s, e, b.rate || (b.subtotal / Math.max(1, b.nights || 1)));
+      await db.rescheduleBooking(b.id, s, e, b.rate);
       UI.toast('Dates updated — waiting for ' + first + ' to accept');
       close();
       Router.go('bookingDetail');

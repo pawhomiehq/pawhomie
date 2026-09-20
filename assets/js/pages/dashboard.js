@@ -86,25 +86,27 @@ Pages.dashboard = { render(){ return `
       });
     });
 
-    // real pets
-    var petsBox = document.getElementById('dashPets');
-    if (petsBox){
-      var pets = await db.getPets();
-      if (!pets.length){
-        petsBox.innerHTML = '<div class="card row-sb" style="padding:14px 16px;cursor:pointer" data-go="petProfile">'+
-          '<div class="muted" style="font-size:13.5px">No pets added yet</div>'+UI.tag('Add a pet','gold')+'</div>';
-      } else {
-        petsBox.innerHTML = pets.map(function(p){
-          var meta = [p.species, p.breed, (p.age_years!=null?p.age_years+' yrs':'')].filter(Boolean).join(' \u00b7 ');
-          return '<div class="card row-sb" style="padding:14px 16px;cursor:pointer;margin-bottom:8px" data-pet="'+p.id+'">'+
-            '<div style="display:flex;gap:12px;align-items:center">'+UI.avatar((p.name||'?').charAt(0).toUpperCase(),{size:44,fs:16})+
-            '<div><div style="font-weight:800">'+(p.name||'Pet')+'</div><div class="muted" style="font-size:12.5px">'+meta+'</div></div></div>'+UI.tag('Edit')+'</div>';
-        }).join('');
-        petsBox.querySelectorAll('[data-pet]').forEach(function(el){
-          el.addEventListener('click', function(){ App.currentPetId = el.getAttribute('data-pet'); Router.go('petProfile'); });
-        });
+    // real pets (isolated so nothing above can block it)
+    try {
+      var petsBox = document.getElementById('dashPets');
+      if (petsBox){
+        var pets = await db.getPets();
+        if (!pets.length){
+          petsBox.innerHTML = '<div class="card row-sb" style="padding:14px 16px;cursor:pointer" data-go="petProfile">'+
+            '<div class="muted" style="font-size:13.5px">No pets added yet</div>'+UI.tag('Add a pet','gold')+'</div>';
+        } else {
+          petsBox.innerHTML = pets.map(function(p){
+            var meta = [p.species, p.breed, (p.age_years!=null?p.age_years+' yrs':'')].filter(Boolean).join(' \u00b7 ');
+            return '<div class="card row-sb" style="padding:14px 16px;cursor:pointer;margin-bottom:8px" data-pet="'+p.id+'">'+
+              '<div style="display:flex;gap:12px;align-items:center">'+UI.avatar((p.name||'?').charAt(0).toUpperCase(),{size:44,fs:16})+
+              '<div><div style="font-weight:800">'+(p.name||'Pet')+'</div><div class="muted" style="font-size:12.5px">'+meta+'</div></div></div>'+UI.tag('Edit')+'</div>';
+          }).join('');
+          petsBox.querySelectorAll('[data-pet]').forEach(function(el){
+            el.addEventListener('click', function(){ App.currentPetId = el.getAttribute('data-pet'); Router.go('petProfile'); });
+          });
+        }
       }
-    }
+    } catch(e){ console.error('dash pets:', e.message); }
   }
 };
 

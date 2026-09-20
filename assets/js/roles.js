@@ -14,6 +14,7 @@
 
 window.ACCESS = {
   privacy: 'public',
+  resetPassword: 'public',
   terms: 'public',
   /* --- anyone, logged in or not --- */
   welcome:        'public',

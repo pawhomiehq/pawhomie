@@ -28,13 +28,8 @@ Pages.services = {
     }).join('');
 
     host.innerHTML = `
+      <p class="muted anim" style="font-size:13px;margin-bottom:10px">Turn on the services you offer and set your own price for each. Different services can have different rates.</p>
       <div class="card anim" style="padding:6px 16px">${rows}</div>
-
-      <div class="sec">Your nightly rate</div>
-      <div class="card anim d1" style="padding:16px">
-        <div class="label">Base rate per night (house sitting)</div>
-        <div class="price-wrap big">$<input class="price-input" id="baseRate" type="number" min="0" max="500" value="${prof && prof.rate_per_night!=null ? prof.rate_per_night : 40}"></div>
-      </div>
 
       <div class="sec">About you</div>
       <textarea class="field anim d1" id="aboutText" rows="3" placeholder="Tell owners why their pet will love staying with you\u2026">${prof && prof.about ? prof.about : ''}</textarea>
@@ -68,9 +63,6 @@ Pages.services = {
       var btn = this, err = document.getElementById('svcErr');
       err.style.display = 'none';
 
-      var baseRate = Number(document.getElementById('baseRate').value);
-      if (isNaN(baseRate) || baseRate <= 0){ err.textContent = 'Please set a nightly rate above $0.'; err.style.display='block'; return; }
-
       // gather each service
       var services = [];
       var bad = false;
@@ -84,15 +76,18 @@ Pages.services = {
       });
       if (bad){ err.textContent = 'Every service you turn on needs a price above $0.'; err.style.display='block'; return; }
 
+      var enabledServices = services.filter(function(s){ return s.enabled; });
       var published = document.getElementById('pubTog').classList.contains('on');
-      if (published && !services.some(function(s){ return s.enabled; })){
+      if (published && !enabledServices.length){
         err.textContent = 'Turn on at least one service before publishing.'; err.style.display='block'; return;
       }
+      // "from" rate shown on cards = the lowest enabled service price
+      var fromRate = enabledServices.length ? Math.min.apply(null, enabledServices.map(function(s){ return s.price; })) : 0;
 
       btn.disabled = true; btn.textContent = 'Saving…';
       try {
         await db.saveSitterProfile({
-          rate_per_night: baseRate,
+          rate_per_night: fromRate,
           about: (document.getElementById('aboutText').value || '').trim(),
           published: published
         });

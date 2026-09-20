@@ -69,7 +69,7 @@ Pages.search = {
         <div class="card scard anim" data-sitter="${s.id}" style="animation-delay:${i*0.05}s">
           ${UI.avatar(s.initial,{size:60,fs:22,gold:s.gold})}
           <div class="info">
-            <div class="row-sb"><div class="name">${s.name}</div><div class="rate">$${s.rate} <small>/night</small></div></div>
+            <div class="row-sb"><div class="name">${s.name}</div><div class="rate"><small>from</small> $${s.rate} <small>/night</small></div></div>
             <div class="meta"><span class="verified">\u2713 Verified</span> \u00b7 \u2605 ${s.rating} (${s.reviews})${s.city?' \u00b7 '+s.city:''}</div>
             <div class="tags">${s.tags.map(function(t){return UI.tag(t);}).join('')}</div>
           </div>

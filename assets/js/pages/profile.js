@@ -27,6 +27,8 @@ Pages.profile = {
           <div class="sec">Home & walk area</div>
           <div style="display:flex;gap:10px">${UI.photo('home','flex:1;height:100px;border-radius:14px')}${UI.photo('walk','flex:1;height:100px;border-radius:14px')}</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">${s.tags.map(function(t){return UI.tag(t);}).join('')}${UI.tag('Non-smoking')}</div>
+          <div class="sec">Services &amp; rates</div>
+          <div id="profileServices"><div class="muted" style="font-size:13px;padding:6px">Loading services…</div></div>
           <div class="sec">Recent reviews</div>
           <div id="profileReviews"><div class="muted" style="font-size:13px;padding:10px">Loading reviews…</div></div>
         </div>
@@ -57,6 +59,24 @@ Pages.profile = {
   mount(){
     var v=document.getElementById('videoCta');
     if(v) v.addEventListener('click', function(){ window.Video.openSheet(); });
+
+    // real per-service prices
+    var svcBox = document.getElementById('profileServices');
+    if (svcBox && App.currentSitter && db.getSitterServices){
+      db.getSitterServices(App.currentSitter.id).then(function(services){
+        var labelFor = {};
+        (window.SERVICES||[]).forEach(function(x){ labelFor[x.id] = x.label; });
+        if (!services.length){
+          svcBox.innerHTML = '<div class="card" style="padding:14px"><div class="muted" style="font-size:13px">This sitter hasn\u2019t listed individual services yet.</div></div>';
+          return;
+        }
+        svcBox.innerHTML = '<div class="card" style="padding:6px 16px">' + services.map(function(sv, i){
+          return '<div class="row-sb" style="padding:12px 0'+(i? ';border-top:1px solid var(--line)':'')+'">'+
+            '<span style="font-weight:700">'+(labelFor[sv.kind]||sv.kind)+'</span>'+
+            '<span style="font-weight:800;color:var(--teal-dk)">$'+sv.price+' <small class="muted">/night</small></span></div>';
+        }).join('') + '</div>';
+      }).catch(function(){ svcBox.innerHTML=''; });
+    }
 
     // real reviews
     var rbox = document.getElementById('profileReviews');

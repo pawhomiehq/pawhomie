@@ -257,9 +257,7 @@ async function drawResult(host){
   document.getElementById('finishQuiz').addEventListener('click', async function(){
     if (!passed){ VS.view='quiz'; VS.i=0; VS.answers=[]; drawV(); return; }
     var btn=this; btn.disabled=true; btn.textContent='Saving…';
-    try { await db.submitQuiz(percent, true); /* record pass, status flips only at final submit */
-      // note: passing 'false' keeps status until the app is submitted from the checklist
-      await db.saveApplication({}); // no-op merge
+    try { await db.submitQuiz(percent, true); /* record pass; status flips only at final submit */
       VS.view='status'; await drawV();
     } catch(e){ btn.disabled=false; btn.textContent='Save result'; var er=document.getElementById('qErr'); er.textContent=e.message||'Could not save.'; er.style.display='block'; }
   });
