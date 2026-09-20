@@ -26,7 +26,7 @@ function shell(title: string, bodyHtml: string) {
 <body style="margin:0;padding:0;background:${BRAND.cream};font-family:'Nunito','Segoe UI',Helvetica,Arial,sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.cream};padding:28px 12px;"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#FFFFFF;border-radius:22px;overflow:hidden;border:1px solid ${BRAND.line};box-shadow:0 10px 30px rgba(20,81,76,.08);">
-<tr><td style="background:${BRAND.teal};padding:24px 30px;text-align:center;"><img src="${BRAND.logo}" alt="PawHomie" height="46" style="height:46px;width:auto;display:inline-block;"></td></tr>
+<tr><td style="background:${BRAND.teal};padding:24px 30px;text-align:center;"><img src="${BRAND.logo}" alt="PawHomie" height="54" style="height:54px;max-width:80%;width:auto;display:inline-block;"></td></tr>
 <tr><td style="padding:32px 34px 28px 34px;color:${BRAND.ink};">${bodyHtml}</td></tr>
 <tr><td style="background:${BRAND.cream};padding:20px 30px;text-align:center;border-top:1px solid ${BRAND.line};">
 <p style="margin:0 0 6px 0;font-size:13px;color:${BRAND.muted};font-weight:700;">PawHomie — trusted pet care in your neighbourhood 🐾</p>
