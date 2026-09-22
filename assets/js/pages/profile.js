@@ -29,6 +29,7 @@ Pages.profile = {
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">${s.tags.map(function(t){return UI.tag(t);}).join('')}${UI.tag('Non-smoking')}</div>
           <div class="sec">Services &amp; rates</div>
           <div id="profileServices"><div class="muted" style="font-size:13px;padding:6px">Loading services…</div></div>
+          <div id="profileHomePhotos"></div>
           <div class="sec">Recent reviews</div>
           <div id="profileReviews"><div class="muted" style="font-size:13px;padding:10px">Loading reviews…</div></div>
         </div>
@@ -59,6 +60,18 @@ Pages.profile = {
   mount(){
     var v=document.getElementById('videoCta');
     if(v) v.addEventListener('click', function(){ window.Video.openSheet(); });
+
+    // home photos strip
+    var hpBox = document.getElementById('profileHomePhotos');
+    if (hpBox && App.currentSitter && db.getHomePhotos){
+      db.getHomePhotos(App.currentSitter.id).then(function(photos){
+        if (!photos || !photos.length){ hpBox.innerHTML=''; return; }
+        hpBox.innerHTML = '<div class="sec">Their home &amp; space</div>'+
+          '<div class="pf-photos">'+ photos.map(function(u){
+            return '<img src="'+u+'" alt="" onclick="window.open(\''+u+'\',\'_blank\')">';
+          }).join('') +'</div>';
+      }).catch(function(){ hpBox.innerHTML=''; });
+    }
 
     // real per-service prices
     var svcBox = document.getElementById('profileServices');

@@ -142,5 +142,45 @@ function applyNavBadges(a){
 }
 const NO_TAB = ['favorites','welcome','signup','profile','booking','payment','confirmation','chat','petProfile','bookingDetail','review','services','availability','verification','payouts','requests','notifications'];
 function toast(msg){ var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(window._tt); window._tt=setTimeout(function(){t.classList.remove('show');},2200); }
+/* ---- Canadian address fields (reusable) ---- */
+var CA_PROVINCES = ['ON','QC','BC','AB','MB','SK','NS','NB','NL','PE','NT','YT','NU'];
+var GTA_CITIES = ['Toronto','North York','Scarborough','Etobicoke','East York','York','Mississauga','Brampton','Markham','Vaughan','Richmond Hill','Oakville','Pickering','Ajax','Burlington','Milton','Aurora','Newmarket','Whitby','Oshawa'];
+
+function addressFields(a, prefix){
+  a = a || {}; prefix = prefix || 'addr';
+  return `
+    <div style="display:flex;gap:12px">
+      <div style="flex:1;min-width:0"><div class="label">Unit / Apt (optional)</div>
+        <input class="field" id="${prefix}Unit" value="${(a.unit||'').replace(/"/g,'&quot;')}" placeholder="e.g. 4B"></div>
+      <div style="flex:2;min-width:0"><div class="label">Street address</div>
+        <input class="field" id="${prefix}Street" value="${(a.street||'').replace(/"/g,'&quot;')}" placeholder="123 Maple St"></div>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:12px">
+      <div style="flex:2;min-width:0"><div class="label">City</div>
+        <select class="field" id="${prefix}City">
+          <option value="">Choose…</option>
+          ${GTA_CITIES.map(function(c){return '<option'+(a.city===c?' selected':'')+'>'+c+'</option>';}).join('')}
+        </select></div>
+      <div style="flex:1;min-width:0"><div class="label">Province</div>
+        <select class="field" id="${prefix}Prov">
+          ${CA_PROVINCES.map(function(p){return '<option'+((a.province||'ON')===p?' selected':'')+'>'+p+'</option>';}).join('')}
+        </select></div>
+    </div>
+    <div class="label" style="margin-top:12px">Postal code</div>
+    <input class="field" id="${prefix}Postal" value="${(a.postal||'').replace(/"/g,'&quot;')}" placeholder="A1A 1A1" maxlength="7" style="text-transform:uppercase">`;
+}
+
+/* Read the fields back into an object; returns {ok, address, parts, error}. */
+function readAddress(prefix){
+  prefix = prefix || 'addr';
+  function v(id){ var el = document.getElementById(prefix+id); return el ? (el.value||'').trim() : ''; }
+  var unit = v('Unit'), street = v('Street'), city = v('City'), prov = v('Prov'), postal = v('Postal').toUpperCase();
+  if (!street) return { ok:false, error:'Please enter your street address.' };
+  if (!city)   return { ok:false, error:'Please choose your city.' };
+  if (!/^[A-Za-z]\d[A-Za-z][ ]?\d[A-Za-z]\d$/.test(postal)) return { ok:false, error:'Please enter a valid postal code (e.g. M5V 3A8).' };
+  var oneLine = (unit ? unit+'-' : '') + street + ', ' + city + ', ' + prov + ' ' + postal;
+  return { ok:true, address:oneLine, parts:{ unit:unit, street:street, city:city, province:prov, postal:postal } };
+}
+
 window.UI = {
-  skeleton:function(n){ n=n||3; var o=''; for(var i=0;i<n;i++) o+='<div class="card skel skel-card"></div>'; return o; }, icon, photo, avatar, tag, appbar, backBtn, renderNav, NO_TAB, toast };
+  skeleton:function(n){ n=n||3; var o=''; for(var i=0;i<n;i++) o+='<div class="card skel skel-card"></div>'; return o; }, icon, photo, avatar, tag, appbar, backBtn, renderNav, NO_TAB, toast, addressFields, readAddress };

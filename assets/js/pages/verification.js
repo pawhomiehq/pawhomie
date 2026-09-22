@@ -112,8 +112,8 @@ function drawApplication(host){
     <div class="card anim" style="padding:16px">
       <div class="label">Phone number</div>
       <input class="field" id="aPhone" type="tel" value="${a.phone||''}" placeholder="(416) 555-0199">
-      <div class="label" style="margin-top:14px">Address</div>
-      <input class="field" id="aAddress" value="${a.address||''}" placeholder="Street, area">
+      <div class="label" style="margin-top:14px">Home address</div>
+      ${UI.addressFields(a.address_parts || {}, 'aAddr')}
       <div style="display:flex;gap:12px;margin-top:14px">
         <div style="flex:1"><div class="label">Home type</div>
           <select class="field" id="aHomeType">
@@ -183,6 +183,8 @@ function drawApplication(host){
     var phone = (document.getElementById('aPhone').value||'').trim();
     var homeType = document.getElementById('aHomeType').value;
     if (!phone){ err.textContent='Please add a phone number.'; err.style.display='block'; return; }
+    var addr = UI.readAddress('aAddr');
+    if (!addr.ok){ err.textContent = addr.error; err.style.display='block'; return; }
     if (!homeType){ err.textContent='Please choose your home type.'; err.style.display='block'; return; }
 
     // required docs: either newly picked, or already uploaded
@@ -201,7 +203,8 @@ function drawApplication(host){
       }
       await db.saveApplication({
         phone: phone,
-        address: (document.getElementById('aAddress').value||'').trim(),
+        address: addr.address,
+        address_parts: addr.parts,
         home_type: homeType,
         has_yard: document.getElementById('aYard').classList.contains('on'),
         documents: documents

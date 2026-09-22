@@ -536,6 +536,37 @@ window.db = {
     });
   },
 
+  /* Upload a home/space photo (public) and return its URL. */
+  async uploadHomePhoto(file) {
+    if (!LIVE()) return { url:(typeof URL!=='undefined'&&URL.createObjectURL)?URL.createObjectURL(file):'' };
+    var user = await this.currentUser();
+    if (!user) throw new Error('Please sign in first.');
+    var ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    var path = user.id + '/home-' + Date.now() + '.' + ext;
+    var up = await sb.storage.from('avatars').upload(path, file, { upsert:true, contentType:file.type });
+    if (up.error) throw up.error;
+    var pub = sb.storage.from('avatars').getPublicUrl(path);
+    return { url: pub.data ? pub.data.publicUrl : '' };
+  },
+
+  /* Save the sitter's list of home-photo URLs. */
+  async saveHomePhotos(urls) {
+    if (!LIVE()) return { ok:true };
+    var sid = await this.mySitterId();
+    if (!sid) throw new Error('Set up your Paw Homie profile first.');
+    var res = await sb.from('sitter_profiles').update({ home_photos: urls }).eq('id', sid);
+    if (res.error) throw res.error;
+    return { ok:true };
+  },
+
+  /* Get a sitter's home photos (for their public profile). */
+  async getHomePhotos(sitterProfileId) {
+    if (!LIVE()) return [];
+    var res = await sb.from('sitter_profiles').select('home_photos').eq('id', sitterProfileId).single();
+    if (res.error || !res.data) return [];
+    return res.data.home_photos || [];
+  },
+
   /* A sitter's enabled services with their individual prices (for their public profile). */
   async getSitterServices(sitterProfileId) {
     if (!LIVE()) return [];
@@ -924,9 +955,16 @@ window.db = {
     var sid = await this.mySitterId();
     if (!sid) return null;
     var res = await sb.from('sitter_profiles')
-      .select('status, quiz_score, quiz_passed, applied_at, phone, address, home_type, has_yard, documents')
+      .select('status, quiz_score, quiz_passed, applied_at, phone, address, address_parts, home_type, has_yard, documents')
       .eq('id', sid).single();
-    if (res.error) { console.error('getApplication:', res.error.message); return null; }
+    if (res.error) {
+      console.error('getApplication (full):', res.error.message);
+      var basic = await sb.from('sitter_profiles')
+        .select('status, quiz_score, quiz_passed, applied_at, phone, address, home_type, has_yard, documents')
+        .eq('id', sid).single();
+      if (basic.error){ console.error('getApplication (basic):', basic.error.message); return null; }
+      return basic.data;
+    }
     return res.data;
   },
 
@@ -958,12 +996,13 @@ window.db = {
     var sid = await this.mySitterId();
     if (!sid) throw new Error('Set up your Paw Homie profile first.');
     var patch = {};
-    if (details.phone !== undefined)     patch.phone = details.phone || null;
-    if (details.address !== undefined)   patch.address = details.address || null;
-    if (details.home_type !== undefined) patch.home_type = details.home_type || null;
-    if (details.has_yard !== undefined)  patch.has_yard = !!details.has_yard;
-    if (details.documents !== undefined) patch.documents = details.documents || {};
-    if (!Object.keys(patch).length) return { ok:true };   // nothing to change — never wipe
+    if (details.phone !== undefined)         patch.phone = details.phone || null;
+    if (details.address !== undefined)       patch.address = details.address || null;
+    if (details.address_parts !== undefined) patch.address_parts = details.address_parts || null;
+    if (details.home_type !== undefined)     patch.home_type = details.home_type || null;
+    if (details.has_yard !== undefined)      patch.has_yard = !!details.has_yard;
+    if (details.documents !== undefined)     patch.documents = details.documents || {};
+    if (!Object.keys(patch).length) return { ok:true };
     var res = await sb.from('sitter_profiles').update(patch).eq('id', sid);
     if (res.error) throw res.error;
     return { ok:true };
@@ -1295,8 +1334,14 @@ window.db = {
     var sid = await this.mySitterId();
     if (!sid) return null;
     var res = await sb.from('sitter_profiles')
-      .select('about, rate_per_night, reply_time, tags, published, verified').eq('id', sid).single();
-    if (res.error) { console.error('getSitterProfile:', res.error.message); return null; }
+      .select('about, rate_per_night, reply_time, tags, published, verified, home_photos').eq('id', sid).single();
+    if (res.error) {
+      console.error('getSitterProfile (full):', res.error.message);
+      var basic = await sb.from('sitter_profiles')
+        .select('about, rate_per_night, reply_time, tags, published, verified').eq('id', sid).single();
+      if (basic.error){ console.error('getSitterProfile (basic):', basic.error.message); return null; }
+      return basic.data;
+    }
     return res.data;
   },
 

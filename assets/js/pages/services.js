@@ -34,9 +34,11 @@ Pages.services = {
       <div class="sec">About you</div>
       <textarea class="field anim d1" id="aboutText" rows="3" placeholder="Tell owners why their pet will love staying with you\u2026">${prof && prof.about ? prof.about : ''}</textarea>
 
-      <div class="sec">Home &amp; walk photos</div>
-      <p class="muted anim d1" style="font-size:13px;margin-bottom:10px">Owners see these on your profile.</p>
-      <div style="display:flex;gap:10px" class="anim d2">${UI.photo('home','flex:1;height:96px;border-radius:14px')}${UI.photo('walk','flex:1;height:96px;border-radius:14px')}</div>
+      <div class="sec">Photos of your home &amp; space</div>
+      <p class="muted anim d1" style="font-size:13px;margin-bottom:10px">Owners see these on your profile \u2014 show where their pet will stay, your yard, walking area, etc. Add up to 6.</p>
+      <div id="homePhotos" class="home-grid anim d2"></div>
+      <input type="file" accept="image/*" id="homePhotoInput" style="display:none">
+      <div id="homePhotoErr" class="authError" style="display:none;margin-top:8px"></div>
 
       <div class="card anim d2" style="padding:14px 16px;margin-top:16px;display:flex;align-items:center;gap:12px">
         <div style="flex:1"><b>Publish my profile</b><div class="muted" style="font-size:12px">When on, owners can find and book you.</div></div>
@@ -57,6 +59,54 @@ Pages.services = {
     });
     var pub = document.getElementById('pubTog');
     if (pub) pub.addEventListener('click', function(){ pub.classList.toggle('on'); });
+
+    /* ---- home photos gallery (real uploads) ---- */
+    var homePhotos = (prof && prof.home_photos) ? prof.home_photos.slice() : [];
+    var grid = document.getElementById('homePhotos');
+    var fileIn = document.getElementById('homePhotoInput');
+    var hpErr = document.getElementById('homePhotoErr');
+
+    function drawGrid(){
+      var tiles = homePhotos.map(function(url, i){
+        return '<div class="home-tile"><img src="'+url+'" alt=""><button type="button" class="home-del" data-i="'+i+'">\u00d7</button></div>';
+      }).join('');
+      var addBtn = homePhotos.length < 6
+        ? '<button type="button" class="home-add" id="homeAdd">'+UI.icon('image',22)+'<span>Add photo</span></button>'
+        : '';
+      grid.innerHTML = tiles + addBtn;
+      var add = document.getElementById('homeAdd');
+      if (add) add.addEventListener('click', function(){ fileIn.click(); });
+      grid.querySelectorAll('.home-del').forEach(function(b){
+        b.addEventListener('click', async function(){
+          var idx = Number(b.getAttribute('data-i'));
+          homePhotos.splice(idx,1);
+          drawGrid();
+          try { await db.saveHomePhotos(homePhotos); } catch(e){ hpErr.textContent=e.message||'Could not update'; hpErr.style.display='block'; }
+        });
+      });
+    }
+    drawGrid();
+
+    if (fileIn) fileIn.addEventListener('change', async function(){
+      var f = fileIn.files && fileIn.files[0];
+      if (!f){ return; }
+      if (!/^image\//.test(f.type)){ hpErr.textContent='Please choose an image.'; hpErr.style.display='block'; return; }
+      if (f.size > 8*1024*1024){ hpErr.textContent='Image must be under 8 MB.'; hpErr.style.display='block'; return; }
+      hpErr.style.display='none';
+      // optimistic placeholder
+      homePhotos.push((window.URL&&URL.createObjectURL)?URL.createObjectURL(f):'');
+      drawGrid();
+      try {
+        var up = await db.uploadHomePhoto(f);
+        homePhotos[homePhotos.length-1] = up.url;   // replace blob with real url
+        await db.saveHomePhotos(homePhotos);
+        drawGrid();
+      } catch(e){
+        homePhotos.pop(); drawGrid();
+        hpErr.textContent = e.message || 'Upload failed.'; hpErr.style.display='block';
+      }
+      fileIn.value = '';
+    });
 
     // save
     document.getElementById('saveSvc').addEventListener('click', async function(){
