@@ -46,7 +46,7 @@ window.Video = (function(){
     if(window.Role && Role.isGuest()){ closeSheet(); UI.toast('Please sign in to request a call'); Router.go('signup'); return; }
     btn.disabled=true; btn.textContent='Sending…';
     var pretty=new Date(day).toLocaleDateString('en-CA',{weekday:'long',month:'short',day:'numeric'});
-    var msg='\uD83D\uDCF9 Video call request: '+pretty+' at '+time+'. Are you free for a quick 15-min intro?';
+    var msg='\uD83D\uDCF9 Video call request: '+pretty+' at '+time+'. Are you free for a quick 15-min intro? When it\u2019s time, either of us can tap \u201cVideo call\u201d at the top of this chat to join.';
     try{
       var conv=await db.getOrCreateConversation(s.id);
       await db.sendMessage(msg, conv.id);

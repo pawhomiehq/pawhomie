@@ -1418,6 +1418,19 @@ window.db = {
     return { ok:true };
   },
 
+  /* ---- video calling (Daily.co via secure edge function) ---- */
+  async getVideoRoom(conversationId) {
+    if (!LIVE()) return { url:'', token:'' };
+    var res = await sb.functions.invoke('video-room', { body: { conversationId: conversationId } });
+    if (res.error) {
+      var detail = '';
+      try { if (res.error.context && res.error.context.json){ var j = await res.error.context.json(); detail = j.error || ''; } } catch(e){}
+      throw new Error(detail || res.error.message || 'Video calling is unavailable right now.');
+    }
+    if (res.data && res.data.error) throw new Error(res.data.error);
+    return res.data;
+  },
+
   /* ---- Stripe payments (via secure Edge Functions) ---- */
 
   // Create a PaymentIntent that HOLDS the funds. Returns { clientSecret, id }.

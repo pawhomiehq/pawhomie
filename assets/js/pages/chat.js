@@ -6,7 +6,10 @@ Pages.chat = {
     return `
   ${UI.appbar(c.name, '', 'messages')}
   <div class="page narrow" style="padding-bottom:110px">
-    <div style="text-align:right;margin-bottom:4px"><a id="reportConvo" style="font-size:12px;font-weight:700;color:var(--muted);cursor:pointer">Report conversation</a></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <button class="btn ghost sm" id="startCall" style="width:auto;padding:7px 14px">${UI.icon('video',16)} Video call</button>
+      <a id="reportConvo" style="font-size:12px;font-weight:700;color:var(--muted);cursor:pointer">Report conversation</a>
+    </div>
     <div class="thread" id="thread">
       <div class="muted" style="text-align:center;font-size:13px;padding:20px">Loading…</div>
     </div>
@@ -25,6 +28,11 @@ Pages.chat = {
     var btn    = document.getElementById('msgSend');
     var conv   = App.currentConversation;
     if (conv && conv.id && db.markConversationRead){ db.markConversationRead(conv.id).catch(function(){}); }
+
+    var callBtn = document.getElementById('startCall');
+    if (callBtn) callBtn.addEventListener('click', function(){
+      Router.go('videoCall');
+    });
 
     var rep = document.getElementById('reportConvo');    if (rep) rep.addEventListener('click', async function(){
       if (!conv || !conv.id) return;
