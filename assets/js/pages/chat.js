@@ -12,8 +12,10 @@ Pages.chat = {
     </div>
   </div>
   <div class="msgbar">
+    <button class="send" id="msgPhoto" style="background:var(--tint);color:var(--teal)">${UI.icon('image',20)}</button>
     <input id="msgIn" placeholder="Message…" autocomplete="off">
     <button class="send" id="msgSend">${UI.icon('msg',20)}</button>
+    <input type="file" accept="image/*,video/*" id="msgFile" style="display:none">
   </div>`;
   },
 
@@ -70,7 +72,7 @@ Pages.chat = {
     function draw(m) {
       if (seen[m.id]) return;
       seen[m.id] = true;
-      add(m.sender_id === me.id ? 'me' : 'them', m.body);
+      add(m.sender_id === me.id ? 'me' : 'them', m.body, false, m.image_url);
     }
 
     var msgs = await db.getMessages(conv.id);
@@ -115,17 +117,55 @@ Pages.chat = {
     });
 
     /* ---- helpers ---- */
-    function add(side, text, pending) {
+    function isVideo(url){ return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(url||''); }
+    function add(side, text, pending, mediaUrl) {
       var empty = thread.querySelector('.muted');
       if (empty) empty.remove();
       var b = document.createElement('div');
       b.className = 'bub ' + side + (pending ? ' pending' : '');
-      b.textContent = text;
+      if (mediaUrl){
+        if (isVideo(mediaUrl)){
+          var vid = document.createElement('video');
+          vid.src = mediaUrl; vid.className = 'bub-vid'; vid.controls = true; vid.playsInline = true; vid.preload = 'metadata';
+          b.appendChild(vid);
+        } else {
+          var img = document.createElement('img');
+          img.src = mediaUrl; img.className = 'bub-img';
+          img.addEventListener('click', function(){ window.open(mediaUrl, '_blank'); });
+          b.appendChild(img);
+        }
+        if (text){ var cap = document.createElement('div'); cap.textContent = text; cap.style.marginTop='6px'; b.appendChild(cap); }
+      } else {
+        b.textContent = text;
+      }
       thread.appendChild(b);
       scroll();
       return b;
     }
     function scroll(){ window.scrollTo(0, document.body.scrollHeight); }
+
+    // photo / video upload button
+    var photoBtn = document.getElementById('msgPhoto');
+    var fileIn = document.getElementById('msgFile');
+    if (photoBtn && fileIn){
+      photoBtn.addEventListener('click', function(){ fileIn.click(); });
+      fileIn.addEventListener('change', async function(){
+        var f = fileIn.files && fileIn.files[0];
+        if (!f) return;
+        var isImg = /^image\//.test(f.type), isVid = /^video\//.test(f.type);
+        if (!isImg && !isVid){ UI.toast('Please choose a photo or video'); return; }
+        var limit = isVid ? 40*1024*1024 : 8*1024*1024;
+        if (f.size > limit){ UI.toast(isVid ? 'Video must be under 40 MB' : 'Image must be under 8 MB'); return; }
+        var ph = add('me', '', true, (window.URL&&URL.createObjectURL)?URL.createObjectURL(f):'');
+        try {
+          var up = await db.uploadChatMedia(f, conv.id);
+          await db.sendMessage('', conv.id, up.url);
+          ph.remove();
+        } catch(e){ ph.classList.add('failed'); UI.toast(e.message || 'Could not send'); }
+        fileIn.value = '';
+      });
+    }
+
     function wire(onSend) {
       function go(){
         var v = (input.value || '').trim();

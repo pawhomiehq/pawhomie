@@ -698,6 +698,23 @@ window.db = {
   },
 
   async uploadChatImage(file, conversationId) {
+    return this.uploadChatMedia(file, conversationId);
+  },
+
+  /* Upload a photo OR video to the chat-images bucket, return its public URL. */
+  async uploadChatMedia(file, conversationId) {
+    if (!LIVE()) return { url:'' };
+    var user = await this.currentUser();
+    if (!user) throw new Error('Please sign in first.');
+    var ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    var path = user.id + '/' + conversationId + '-' + Date.now() + '.' + ext;
+    var up = await sb.storage.from('chat-images').upload(path, file, { upsert:true, contentType:file.type });
+    if (up.error) throw up.error;
+    var pub = sb.storage.from('chat-images').getPublicUrl(path);
+    return { url: pub.data ? pub.data.publicUrl : '' };
+  },
+
+  async _uploadChatImageOld(file, conversationId) {
     if (!LIVE()) return { url:'' };
     var user = await this.currentUser();
     if (!user) throw new Error('Please sign in first.');

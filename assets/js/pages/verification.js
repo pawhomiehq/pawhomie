@@ -11,8 +11,8 @@ var DOCS = [
     guide:{ title:'Before you upload your ID',
       do:['Lay it flat on a plain surface','Bright, even lighting','All four corners visible','Text sharp and readable'],
       dont:['Blurry or out of focus','Glare or shadows across it','Cut-off edges or corners','Cropped so details are hidden'] } },
-  { key:'selfie', label:'A photo of you',  hint:'Clear photo of your face', required:true,
-    guide:{ title:'Before you upload your photo',
+  { key:'selfie', label:'Live selfie',  hint:'Taken live in-app \u2014 confirms it\u2019s really you', required:true, live:true,
+    guide:{ title:'Before you take your live selfie',
       do:['Face clearly visible, looking at the camera','Good, even lighting','Plain background','Just you in the frame'],
       dont:['Sunglasses, hats or masks','Dark, backlit or shaky','Heavy filters','Group photos'] } },
   { key:'home',   label:'Your home',       hint:'Where the pet will stay', required:true },
@@ -135,7 +135,7 @@ function drawApplication(host){
             <b style="font-size:14px">${d.label}${d.required?'':' <span class="muted" style="font-weight:600">(optional)</span>'}</b>
             <div class="muted" style="font-size:12px">${have?'Selected \u2713':d.hint}</div>
           </div>
-          <button class="btn ghost sm" style="width:auto;padding:8px 14px" data-upload="${d.key}">${have?'Change':'Upload'}</button>
+          <button class="btn ghost sm" style="width:auto;padding:8px 14px" data-upload="${d.key}">${d.live ? (have?'Retake':'Take live selfie') : (have?'Change':'Upload')}</button>
           <input type="file" accept="image/*" data-file="${d.key}" style="display:none">
         </div>`;
       }).join('')}
@@ -149,12 +149,31 @@ function drawApplication(host){
   document.getElementById('aYard').addEventListener('click', function(){ this.classList.toggle('on'); });
   document.getElementById('cancelApp').addEventListener('click', function(){ VS.view='status'; drawV(); });
 
-  // Upload buttons — show photo guidance first for ID & selfie (error prevention)
+  // Upload buttons — show photo guidance first for ID (error prevention).
+  // The SELFIE must be captured live (no uploading), so it opens the camera.
   host.querySelectorAll('[data-upload]').forEach(function(btn){
     var key = btn.getAttribute('data-upload');
     var doc = DOCS.filter(function(d){ return d.key===key; })[0];
     var input = host.querySelector('[data-file="'+key+'"]');
     btn.addEventListener('click', function(){
+      if (key === 'selfie'){
+        if (!window.SelfieCapture || !SelfieCapture.supported()){
+          UI.toast('Your device/browser can\u2019t open the camera for a live selfie. Please use a phone or a browser with camera support.');
+          return;
+        }
+        SelfieCapture.open(function(fileBlob){
+          VS.files.selfie = fileBlob;
+          var url = URL.createObjectURL(fileBlob);
+          VS.previews.selfie = url;
+          var thumb = document.getElementById('thumb-selfie');
+          if (thumb) thumb.innerHTML = '<img src="'+url+'">';
+          var row = document.querySelector('.doc-row[data-doc="selfie"]') ||
+                    (host.querySelector('[data-file="selfie"]') && host.querySelector('[data-file="selfie"]').closest('.doc-row'));
+          if (row) row.classList.add('done');
+          UI.toast('Selfie captured \u2713');
+        });
+        return;
+      }
       if (doc && doc.guide){ showPhotoGuide(doc.guide, function(){ input.click(); }); }
       else { input.click(); }
     });

@@ -725,3 +725,22 @@ input[type="date"]{max-width:100%;box-sizing:border-box}
 .pet-photo-big{width:110px;height:110px;border-radius:20px;margin:0 auto;overflow:hidden;background:var(--tint);
   display:grid;place-items:center;color:var(--teal)}
 .pet-photo-big img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* live selfie capture */
+.selfie-wrap{position:fixed;inset:0;z-index:9500;background:rgba(20,48,46,.75);display:flex;align-items:center;justify-content:center;padding:14px}
+.selfie-card{background:#fff;border-radius:22px;max-width:420px;width:100%;max-height:92vh;overflow:auto}
+.selfie-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}
+.selfie-head b{font-size:16px;color:var(--teal-dk)}
+.selfie-x{border:none;background:none;font-size:26px;line-height:1;color:var(--muted);cursor:pointer}
+.selfie-guide{padding:12px 18px;font-size:13px;color:#40504D;font-weight:600}
+.selfie-guide ul{margin:6px 0 0;padding-left:18px}
+.selfie-guide li{margin:2px 0}
+.selfie-stage{position:relative;width:100%;aspect-ratio:1;background:#000;overflow:hidden}
+.selfie-stage video,.selfie-stage canvas{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.selfie-stage canvas{transform:none}
+.selfie-oval{position:absolute;inset:0;margin:auto;width:62%;height:80%;border:3px dashed rgba(255,255,255,.85);border-radius:50%;pointer-events:none}
+.selfie-actions{padding:16px 18px}
+.selfie-actions .btn{width:100%}
+
+/* chat video bubbles */
+.bub-vid{max-width:220px;max-height:260px;border-radius:12px;display:block;background:#000}
