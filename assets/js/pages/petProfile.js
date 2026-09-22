@@ -40,7 +40,7 @@ async function draw(){
       if (p.microchipped)      flags.push('Microchipped');
       return `<div class="card anim" style="padding:14px;margin-bottom:12px">
         <div style="display:flex;gap:12px;align-items:center">
-          ${UI.avatar(p.name.charAt(0).toUpperCase(),{size:48,fs:18})}
+          ${p.photo_url ? '<div class="pet-thumb"><img src="'+p.photo_url+'" alt=""></div>' : UI.avatar(p.name.charAt(0).toUpperCase(),{size:48,fs:18})}
           <div style="flex:1;min-width:0">
             <div style="font-weight:800;font-size:16px">${p.name}</div>
             <div class="muted" style="font-size:12.5px">${sub}</div>
@@ -73,6 +73,13 @@ function drawForm(host){
 
   host.innerHTML = `
     <div class="card anim" style="padding:16px">
+      <div style="text-align:center;margin-bottom:16px">
+        <div class="pet-photo-big" id="petPhotoBox">
+          ${p.photo_url ? '<img src="'+p.photo_url+'" alt="">' : '<span>'+UI.icon('image',26)+'</span>'}
+        </div>
+        <button class="btn ghost sm" id="petPhotoBtn" type="button" style="width:auto;padding:7px 16px;margin-top:10px">${p.photo_url?'Change photo':'Add pet photo'}</button>
+        <input type="file" accept="image/*" id="petPhotoInput" style="display:none">
+      </div>
       <div class="label">Name</div>
       <input class="field" id="pName" value="${p.name || ''}" placeholder="Milo">
       <div style="display:flex;gap:12px;margin-top:14px">
@@ -150,6 +157,31 @@ function drawForm(host){
     catch(e){ del.disabled = false; showPetErr(e.message || 'Could not remove pet'); }
   });
 
+  // pet photo upload
+  var petPhotoUrl = p.photo_url || null;
+  var ppBtn = document.getElementById('petPhotoBtn');
+  var ppInput = document.getElementById('petPhotoInput');
+  var ppBox = document.getElementById('petPhotoBox');
+  if (ppBtn && ppInput){
+    ppBtn.addEventListener('click', function(){ ppInput.click(); });
+    ppInput.addEventListener('change', async function(){
+      var f = ppInput.files && ppInput.files[0];
+      if (!f) return;
+      if (!/^image\//.test(f.type)){ UI.toast('Please choose an image'); return; }
+      if (f.size > 6*1024*1024){ UI.toast('Image must be under 6 MB'); return; }
+      ppBox.innerHTML = '<div class="skel" style="width:100%;height:100%"></div>';
+      try {
+        var up = await db.uploadPetPhoto(f);
+        petPhotoUrl = up.url;
+        ppBox.innerHTML = '<img src="'+up.url+'" alt="">';
+        ppBtn.textContent = 'Change photo';
+      } catch(e){
+        ppBox.innerHTML = '<span>'+UI.icon('image',26)+'</span>';
+        UI.toast(e.message || 'Upload failed');
+      }
+    });
+  }
+
   document.getElementById('savePet').addEventListener('click', async function(){
     var btn = this;
     var name = (document.getElementById('pName').value || '').trim();
@@ -163,7 +195,8 @@ function drawForm(host){
       species: document.getElementById('pSpecies').value,
       breed: (document.getElementById('pBreed').value || '').trim() || null,
       age_years: age,
-      notes: (document.getElementById('pNotes').value || '').trim() || null
+      notes: (document.getElementById('pNotes').value || '').trim() || null,
+      photo_url: petPhotoUrl
     };
     host.querySelectorAll('[data-flag]').forEach(function(t){
       data[t.getAttribute('data-flag')] = t.classList.contains('on');

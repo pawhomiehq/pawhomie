@@ -718,3 +718,10 @@ input[type="date"]{max-width:100%;box-sizing:border-box}
 /* profile: home photos strip */
 .pf-photos{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
 .pf-photos img{width:150px;height:110px;object-fit:cover;border-radius:14px;flex:none;cursor:pointer}
+
+/* pet photo thumbnails & uploader */
+.pet-thumb{width:48px;height:48px;border-radius:12px;overflow:hidden;flex:none;background:var(--tint)}
+.pet-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.pet-photo-big{width:110px;height:110px;border-radius:20px;margin:0 auto;overflow:hidden;background:var(--tint);
+  display:grid;place-items:center;color:var(--teal)}
+.pet-photo-big img{width:100%;height:100%;object-fit:cover;display:block}

@@ -342,9 +342,16 @@ window.db = {
     var user = await this.currentUser();
     if (!user) return null;
     var res = await sb.from('profiles')
-      .select('id, full_name, initial, avatar_gold, photo_url, is_owner, is_sitter, is_admin, city')
+      .select('id, full_name, initial, avatar_gold, photo_url, phone, bio, is_owner, is_sitter, is_admin, city')
       .eq('id', user.id).maybeSingle();
-    if (res.error) { console.error('getProfile:', res.error.message); return null; }
+    if (res.error) {
+      console.error('getProfile (full):', res.error.message);
+      // fall back without the newest optional columns so profile still loads
+      res = await sb.from('profiles')
+        .select('id, full_name, initial, avatar_gold, photo_url, is_owner, is_sitter, is_admin, city')
+        .eq('id', user.id).maybeSingle();
+      if (res.error){ console.error('getProfile (basic):', res.error.message); return null; }
+    }
     if (!res.data) {
       // No profile row yet (e.g. account made before the trigger existed).
       // Create one now so the person can actually use the app.
@@ -354,7 +361,7 @@ window.db = {
         id: user.id,
         full_name: name,
         is_owner: true, is_sitter: false, is_admin: false
-      }).select('id, full_name, initial, avatar_gold, photo_url, is_owner, is_sitter, is_admin, city').single();
+      }).select('id, full_name, initial, avatar_gold, photo_url, phone, bio, is_owner, is_sitter, is_admin, city').single();
       if (ins.error) { console.error('getProfile backfill:', ins.error.message); return null; }
       window.App.profile = ins.data;
       return ins.data;
@@ -498,6 +505,8 @@ window.db = {
     if (fields.full_name != null) patch.full_name = fields.full_name;
     if (fields.city != null) patch.city = fields.city;
     if (fields.photo_url != null) patch.photo_url = fields.photo_url;
+    if (fields.phone != null) patch.phone = fields.phone;
+    if (fields.bio != null) patch.bio = fields.bio;
     var res = await sb.from('profiles').update(patch).eq('id', user.id);
     if (res.error) throw res.error;
     if (window.App.profile) Object.assign(window.App.profile, patch);
@@ -773,13 +782,13 @@ window.db = {
     var user = await this.currentUser();
     if (!user) return [];
     var res = await sb.from('pets')
-      .select('id, name, species, breed, age_years, notes, friendly_with_pets, needs_medication, microchipped, vaccination_doc, vaccination_status, vaccination_note')
+      .select('id, name, species, breed, age_years, notes, photo_url, friendly_with_pets, needs_medication, microchipped, vaccination_doc, vaccination_status, vaccination_note')
       .eq('owner_id', user.id).order('created_at');
     if (res.error) {
       console.error('getPets (full):', res.error.message);
       // fall back to core columns so a missing optional column never hides pets
       var basic = await sb.from('pets')
-        .select('id, name, species, breed, age_years, notes')
+        .select('id, name, species, breed, age_years, notes, photo_url')
         .eq('owner_id', user.id).order('created_at');
       if (basic.error){ console.error('getPets (basic):', basic.error.message); return []; }
       return basic.data || [];
@@ -803,12 +812,26 @@ window.db = {
       breed: pet.breed || null,
       age_years: pet.age_years == null ? null : pet.age_years,
       notes: pet.notes || null,
+      photo_url: pet.photo_url || null,
       friendly_with_pets: !!pet.friendly_with_pets,
       needs_medication: !!pet.needs_medication,
       microchipped: !!pet.microchipped
     }).select().single();
     if (res.error) throw res.error;
     return { ok:true, pet:res.data };
+  },
+
+  /* Upload a pet photo (public) and return its URL. */
+  async uploadPetPhoto(file) {
+    if (!LIVE()) return { url:(typeof URL!=='undefined'&&URL.createObjectURL)?URL.createObjectURL(file):'' };
+    var user = await this.currentUser();
+    if (!user) throw new Error('Please sign in first.');
+    var ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    var path = user.id + '/pet-' + Date.now() + '.' + ext;
+    var up = await sb.storage.from('avatars').upload(path, file, { upsert:true, contentType:file.type });
+    if (up.error) throw up.error;
+    var pub = sb.storage.from('avatars').getPublicUrl(path);
+    return { url: pub.data ? pub.data.publicUrl : '' };
   },
 
   async updatePet(id, patch) {
@@ -1455,10 +1478,34 @@ window.db = {
     } catch(e){ console.error('notify:', e.message); }
   },
 
+  /* Check whether the sitter is free for the given date range.
+     Returns { free:true } or { free:false, conflictDates }.
+     A sitter can't have two active (pending/accepted) bookings that overlap. */
+  async checkSitterAvailability(sitterProfileId, startDate, endDate, excludeBookingId) {
+    if (!LIVE()) return { free:true };
+    // overlap rule: existing.start < new.end  AND  existing.end > new.start
+    var q = sb.from('bookings')
+      .select('id, start_date, end_date, status')
+      .eq('sitter_id', sitterProfileId)
+      .in('status', ['pending','accepted'])
+      .lt('start_date', endDate)
+      .gt('end_date', startDate);
+    var res = await q;
+    if (res.error){ console.error('availability check:', res.error.message); return { free:true }; } // fail open, don't block booking on error
+    var conflicts = (res.data||[]).filter(function(b){ return b.id !== excludeBookingId; });
+    if (conflicts.length){
+      return { free:false, conflictDates: conflicts.map(function(b){ return { start:b.start_date, end:b.end_date }; }) };
+    }
+    return { free:true };
+  },
+
   async createBooking(payload) {
     if (!LIVE()) return { ok:true, mock:true };
     var user = await this.currentUser();
     if (!user) throw new Error('Please sign in to book.');
+    // Final guard against double-booking overlapping dates.
+    var avail = await this.checkSitterAvailability(payload.sitterId, payload.startDate, payload.endDate);
+    if (!avail.free) throw new Error('Sorry, this Paw Homie was just booked for those dates. Please choose different dates.');
     var res = await sb.from('bookings').insert({
       owner_id:   user.id,
       sitter_id:  payload.sitterId,

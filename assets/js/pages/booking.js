@@ -182,9 +182,22 @@ Pages.booking = {
     var note = document.getElementById('bookNote');
     note.addEventListener('input', function(){ B.note = note.value; });
 
-    document.getElementById('toPayment').addEventListener('click', function(){
+    document.getElementById('toPayment').addEventListener('click', async function(){
       if (!B.petId) return UI.toast('Please add a pet first');
+      var btn = this;
+      btn.disabled = true; btn.textContent = 'Checking availability…';
+      try {
+        var avail = await db.checkSitterAvailability(s.id, B.startDate, B.endDate);
+        if (!avail.free){
+          btn.disabled = false; btn.textContent = 'Continue to payment';
+          var when = avail.conflictDates && avail.conflictDates[0]
+            ? (' (' + fmtRange(avail.conflictDates[0].start, avail.conflictDates[0].end) + ')') : '';
+          UI.toast(first(s) + ' is already booked for those dates' + when + '. Please pick different dates.');
+          return;
+        }
+      } catch(e){ /* fail open */ }
       Router.go('payment');
     });
   }
 };
+function first(s){ return (s.name || 'This sitter').split(' ')[0]; }
