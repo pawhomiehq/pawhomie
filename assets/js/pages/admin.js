@@ -79,7 +79,7 @@ async function drawOverview(body){
       <div style="flex:1"><b>${s.pending} application${s.pending>1?'s':''} waiting</b><div class="muted" style="font-size:12.5px">Review Paw Homie applications</div></div>
       <span style="color:var(--muted);font-size:20px">\u203a</span>
     </div>` : ''}
-    <p class="muted anim d1" style="font-size:12px;text-align:center;margin-top:16px">Commission is the ${Math.round((CONFIG.SERVICE_FEE_RATE||0.1)*100)}% service fee on completed stays.</p>`;
+    <p class="muted anim d1" style="font-size:12px;text-align:center;margin-top:16px">Platform revenue = our sitter fee (${Math.round(((CONFIG.FEES&&CONFIG.FEES.SITTER_RATE)||0.15)*100)}%) + the parent service fee, from completed stays.</p>`;
 
   var jump = body.querySelector('[data-sec-jump]');
   if (jump) jump.addEventListener('click', function(){

@@ -180,23 +180,51 @@ window.Booking = {
     var ms = new Date(this.state.endDate) - new Date(this.state.startDate);
     return Math.max(1, Math.round(ms / 86400000));
   },
-  quote: function(rate){
-    var nights   = this.nights();
-    var subtotal = Math.round(rate * nights * 100) / 100;
-    var fee      = Math.round(subtotal * (CONFIG.SERVICE_FEE_RATE || 0.10) * 100) / 100;
-    var tax      = Math.round((subtotal + fee) * (CONFIG.TAX_RATE || 0) * 100) / 100;
-    var total    = Math.round((subtotal + fee + tax) * 100) / 100;
-    return { nights:nights, subtotal:subtotal, fee:fee, tax:tax, taxLabel:(CONFIG.TAX_LABEL||'Tax'), total:total };
+  /* The one place PawHomie's fee model lives.
+     Parent pays: subtotal + parent fee (7%, min $3.50, max $25) + HST on that fee.
+     Sitter keeps: subtotal − sitter fee (15%, or founding/loyalty rate). */
+  _round: function(n){ return Math.round(n * 100) / 100; },
+  priceParts: function(subtotal, opts){
+    opts = opts || {};
+    var F = (CONFIG.FEES) || {};
+    var founding = !!opts.founding;
+    // parent fee — percentage, clamped between min and max
+    var pRate = founding && F.FOUNDING_ACTIVE ? (F.FOUNDING_PARENT_RATE||0.05) : (F.PARENT_RATE||0.07);
+    var parentFee = subtotal * pRate;
+    if (F.PARENT_MIN != null) parentFee = Math.max(parentFee, F.PARENT_MIN);
+    if (F.PARENT_MAX != null) parentFee = Math.min(parentFee, F.PARENT_MAX);
+    parentFee = this._round(parentFee);
+    // HST applies to the platform fee only (Bilal's spec)
+    var tax = this._round(parentFee * (CONFIG.TAX_RATE || 0));
+    var total = this._round(subtotal + parentFee + tax);   // what the parent pays
+    // sitter side
+    var sRate = opts.sitterRate != null ? opts.sitterRate
+              : (founding && F.FOUNDING_ACTIVE ? (F.FOUNDING_SITTER_RATE||0.12)
+              : (opts.loyal ? (F.SITTER_LOYAL_RATE||0.12) : (F.SITTER_RATE||0.15)));
+    var sitterFee = this._round(subtotal * sRate);
+    var sitterEarns = this._round(subtotal - sitterFee);
+    return {
+      subtotal: this._round(subtotal),
+      fee: parentFee,            // (back-compat) the parent-facing fee
+      parentFee: parentFee, parentRate: pRate,
+      tax: tax, taxLabel: (CONFIG.TAX_LABEL||'Tax'),
+      total: total,              // parent total
+      sitterFee: sitterFee, sitterRate: sRate, sitterEarns: sitterEarns
+    };
+  },
+  quote: function(rate, opts){
+    var nights = this.nights();
+    var q = this.priceParts(rate * nights, opts);
+    q.nights = nights;
+    return q;
   },
   money: function(n){ return '$' + Number(n).toFixed(2); },
-  quoteFor: function(rate, startDate, endDate){
+  quoteFor: function(rate, startDate, endDate, opts){
     var ms = new Date(endDate) - new Date(startDate);
     var nights = Math.max(1, Math.round(ms / 86400000));
-    var subtotal = Math.round(rate * nights * 100) / 100;
-    var fee      = Math.round(subtotal * (CONFIG.SERVICE_FEE_RATE || 0.10) * 100) / 100;
-    var tax      = Math.round((subtotal + fee) * (CONFIG.TAX_RATE || 0) * 100) / 100;
-    var total    = Math.round((subtotal + fee + tax) * 100) / 100;
-    return { nights:nights, subtotal:subtotal, fee:fee, tax:tax, taxLabel:(CONFIG.TAX_LABEL||'Tax'), total:total };
+    var q = this.priceParts(rate * nights, opts);
+    q.nights = nights;
+    return q;
   }
 };
 
@@ -970,12 +998,17 @@ window.db = {
     if (!LIVE()) return { earnings: 0, upcoming: 0, rating: '5.0', pending: 0 };
     var sid = await this.mySitterId();
     if (!sid) return { earnings:0, upcoming:0, rating:'5.0', pending:0 };
-    var bk = await sb.from('bookings').select('total, status, start_date').eq('sitter_id', sid);
+    var bk = await sb.from('bookings').select('subtotal, total, status, start_date').eq('sitter_id', sid);
     var rv = await sb.from('reviews').select('rating').eq('sitter_id', sid);
     var earnings = 0, upcoming = 0, pending = 0;
     var today = isoDate(new Date());
     (bk.data || []).forEach(function(b){
-      if (b.status === 'completed') earnings += Number(b.total);
+      // Sitter EARNINGS = their base price minus the platform's sitter fee (they keep 85%),
+      // NOT the parent's total (which includes the parent fee + HST).
+      if (b.status === 'completed') {
+        var sRate = (CONFIG.FEES && CONFIG.FEES.SITTER_RATE) || 0.15;
+        earnings += Number(b.subtotal || 0) * (1 - sRate);
+      }
       if (b.status === 'accepted' && b.start_date >= today) upcoming++;
       if (b.status === 'pending') pending++;
     });
@@ -1233,10 +1266,15 @@ window.db = {
     (profs.data||[]).forEach(function(p){ if (p.is_owner) out.owners++; if (p.is_sitter) out.sitters++; });
     var sp = await sb.from('sitter_profiles').select('status');
     (sp.data||[]).forEach(function(s){ if (s.status==='pending') out.pending++; });
-    var bk = await sb.from('bookings').select('status, service_fee');
+    var bk = await sb.from('bookings').select('status, service_fee, subtotal');
+    var sRate = (CONFIG.FEES && CONFIG.FEES.SITTER_RATE) || 0.15;
     (bk.data||[]).forEach(function(b){
       if (b.status==='accepted') out.activeBookings++;
-      if (b.status==='completed'){ out.completed++; out.revenue += Number(b.service_fee||0); }
+      if (b.status==='completed'){
+        out.completed++;
+        // Platform take = sitter fee (15% of subtotal) + parent fee (stored as service_fee).
+        out.revenue += Number(b.subtotal||0) * sRate + Number(b.service_fee||0);
+      }
     });
     var nl = await sb.from('newsletter').select('email');
     out.newsletter = (nl.data||[]).length;
@@ -1465,10 +1503,11 @@ window.db = {
     return res.data || { payoutsEnabled:false };
   },
 
-  async createPaymentHold(amount, bookingId, description, sitterProfileId) {
+  async createPaymentHold(amount, bookingId, description, sitterProfileId, subtotal, sitterRate) {
     if (!LIVE()) return { clientSecret:'mock', id:'pi_mock' };
     var res = await sb.functions.invoke('create-payment', {
-      body: { amount: amount, currency: 'cad', bookingId: bookingId, description: description, sitterProfileId: sitterProfileId }
+      body: { amount: amount, subtotal: subtotal, sitterRate: sitterRate, currency: 'cad',
+              bookingId: bookingId, description: description, sitterProfileId: sitterProfileId }
     });
     if (res.error) throw new Error(res.error.message || 'Payment setup failed');
     if (res.data && res.data.error) throw new Error(res.data.error);

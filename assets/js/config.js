@@ -17,12 +17,33 @@ window.CONFIG = {
   // Where distances are measured from until we ask for the user's location.
   DEFAULT_LOCATION: { lat: 43.6532, lng: -79.3832 }, // downtown Toronto
 
-  // What PawHomie adds on top of the sitter's nightly rate (0.10 = 10%).
-  // Change this one number to change the fee everywhere.
-  SERVICE_FEE_RATE: 0.10,
+  // =====================================================================
+  // FEES — the single source of truth for PawHomie's pricing model.
+  // (Bilal's spec: sitters keep 85%, parents pay 7% capped, founding promo.)
+  // Change these numbers to change fees everywhere in the app + payouts.
+  // =====================================================================
+  FEES: {
+    SITTER_RATE:        0.15,   // platform takes 15% from the sitter (they keep 85%)
+    SITTER_LOYAL_RATE:  0.12,   // 12% after the 4th completed booking with the same parent
+    PARENT_RATE:        0.07,   // parent pays 7% on top of the sitter's price
+    PARENT_MIN:         3.50,   // parent fee never less than $3.50
+    PARENT_MAX:         25.00,  // parent fee never more than $25
+    REVIEW_FEE:         29.00,  // one-time sitter application fee (refunded after 1st booking)
 
-  // Sales tax. Ontario HST is 13% (5% federal GST + 8% provincial) in 2026.
-  // Applied to (subtotal + service fee). Change this one number to update everywhere.
+    // Founding promo (first 200 sitters per city). Flip FOUNDING_ACTIVE to false
+    // when the promo ends; founding sitters stay locked by their profile flag.
+    FOUNDING_ACTIVE:      true,
+    FOUNDING_SITTER_RATE: 0.12, // founding sitters keep 88%
+    FOUNDING_PARENT_RATE: 0.05, // founding-period parents pay 5%
+    FOUNDING_REVIEW_FEE:  0     // review fee waived for founding sitters
+  },
+
+  // Back-compat: some older code still reads SERVICE_FEE_RATE. Keep it pointed
+  // at the parent rate so nothing breaks; the real logic uses FEES above.
+  SERVICE_FEE_RATE: 0.07,
+
+  // Sales tax. Ontario HST is 13%. Applied to the PLATFORM FEES only
+  // (Bilal's spec), not the sitter's base price.
   TAX_RATE: 0.13,
   TAX_LABEL: 'HST (13%)',
 

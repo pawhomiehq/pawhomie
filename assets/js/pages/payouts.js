@@ -18,7 +18,7 @@ Pages.payouts = {
       banner = `<div class="card anim d1" style="padding:16px;margin-top:14px;display:flex;gap:12px;align-items:flex-start;background:#EAF6EF">
         <span style="color:#1E8E5A;flex:none">${UI.icon('check',22)}</span>
         <div style="flex:1"><b>Payouts active</b>
-          <div class="muted" style="font-size:12.5px;margin-top:2px;line-height:1.5">Your bank is connected. After each completed stay, your earnings (minus the 10% service fee) are sent to you automatically.</div>
+          <div class="muted" style="font-size:12.5px;margin-top:2px;line-height:1.5">Your bank is connected. After each completed stay, your earnings (you keep 85%) are sent to you automatically.</div>
         </div></div>`;
     } else {
       banner = `<div class="card anim d1" style="padding:16px;margin-top:14px">
@@ -37,7 +37,7 @@ Pages.payouts = {
       <div class="card anim" style="padding:20px;text-align:center">
         <div class="label" style="margin:0">Total earned (completed stays)</div>
         <div class="big-rate" style="font-size:32px;margin-top:4px">$${stats.earnings||0}</div>
-        <div class="muted" style="font-size:12.5px">Your 10% service fee is already deducted</div>
+        <div class="muted" style="font-size:12.5px">Your PawHomie fee (15%) is already deducted — this is what you keep</div>
       </div>
       ${banner}
       <p class="muted" style="font-size:12px;text-align:center;margin-top:16px">Payments are handled securely by Stripe. PawHomie never sees your bank details.</p>`;

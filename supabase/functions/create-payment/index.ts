@@ -15,8 +15,6 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
   httpClient: Stripe.createFetchHttpClient(),
 });
 
-const COMMISSION_RATE = 0.10; // PawHomie keeps 10%
-
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -27,9 +25,15 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
   try {
-    const { amount, currency, bookingId, description, sitterProfileId } = await req.json();
+    const { amount, subtotal, sitterRate, currency, bookingId, description, sitterProfileId } = await req.json();
 
     const cents = Math.round(Number(amount) * 100);
+    // What the sitter should receive = subtotal minus their fee (default 15%).
+    const sRate = (sitterRate != null ? Number(sitterRate) : 0.15);
+    const sub = Number(subtotal) || (Number(amount) / 1.07); // fallback if subtotal missing
+    const sitterEarnsCents = Math.round(sub * (1 - sRate) * 100);
+    // Platform keeps everything else (its 15% + the parent fee + HST).
+    const platformFeeCents = Math.max(0, cents - sitterEarnsCents);
     if (!cents || cents < 50) {
       return new Response(JSON.stringify({ error: "Invalid amount" }), {
         status: 400, headers: { ...cors, "Content-Type": "application/json" },
@@ -57,7 +61,8 @@ Deno.serve(async (req) => {
         .single();
 
       if (sp?.stripe_account_id && sp?.payouts_enabled) {
-        params.application_fee_amount = Math.round(cents * COMMISSION_RATE);
+        // Sitter receives their 85% (or founding/loyalty rate); platform keeps the rest.
+        params.application_fee_amount = platformFeeCents;
         params.transfer_data = { destination: sp.stripe_account_id };
       }
     }

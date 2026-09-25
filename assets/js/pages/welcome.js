@@ -195,6 +195,35 @@ Pages.welcome = {
         </div>
       </div>
     </div>
+
+    <!-- Keep more than the competition (sitter-focused comparison) -->
+    <div class="band-in" style="margin-top:8px">
+      <div class="reveal keepmore">
+        <h2 style="text-align:center;color:#fff;margin-bottom:6px">Keep more than the competition</h2>
+        <div class="km-pill">FOR SITTERS</div>
+        <div class="km-card">
+          <div class="km-cols">
+            <div class="km-col">
+              <div class="km-label">COMPETITION</div>
+              <div class="km-badge gray">Keeps 80%</div>
+              <div class="km-amt gray">$148.80</div>
+              <div class="km-sub">You keep from $186</div>
+            </div>
+            <div class="km-vs">VS</div>
+            <div class="km-col">
+              <div class="km-label" style="color:var(--teal)">PAWHOMIE</div>
+              <div class="km-badge green">Keeps 85%</div>
+              <div class="km-amt green">$158.10</div>
+              <div class="km-sub">You keep from $186</div>
+              <div class="km-more">+$9.30 more / week</div>
+            </div>
+          </div>
+          <div class="km-break">GTA typical week: 3 nights $126 + 2 walks $40 + 1 drop-in $20 = $186</div>
+        </div>
+        <div class="km-year">You earn up to $483 more per year for the same work</div>
+        <div style="text-align:center;margin-top:16px"><button class="btn gold wauto" data-go="signup">Apply to be a Paw Homie</button></div>
+      </div>
+    </div>
   </section>
 
   <!-- ============ FAQ ============ -->

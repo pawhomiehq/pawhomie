@@ -27,7 +27,12 @@ Pages.services = {
       </div>`;
     }).join('');
 
+    var keepPct = Math.round((1 - ((CONFIG.FEES&&CONFIG.FEES.SITTER_RATE)||0.15)) * 100);
     host.innerHTML = `
+      <div class="card anim" style="padding:14px 16px;margin-bottom:12px;background:var(--tint);display:flex;gap:11px;align-items:center">
+        <span style="color:var(--teal);flex:none">${UI.icon('wallet',20)}</span>
+        <div style="font-size:13px;font-weight:700;color:var(--teal-dk)">You keep <b>${keepPct}%</b> of every booking. The price you set below is what you earn from — our fee is taken from it, never added for you.</div>
+      </div>
       <p class="muted anim" style="font-size:13px;margin-bottom:10px">Turn on the services you offer and set your own price for each. Different services can have different rates.</p>
       <div class="card anim" style="padding:6px 16px">${rows}</div>
 
