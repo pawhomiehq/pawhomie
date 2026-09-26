@@ -1197,15 +1197,10 @@ window.db = {
         .eq('id', sid).single();
       var already = me.data || {};
       if (F.FOUNDING_ACTIVE && !already.is_founding){
-        var city = already.profile && already.profile.city ? String(already.profile.city).split(',')[0].trim() : '';
-        var count = 0;
-        if (city){
-          var others = await sb.from('sitter_profiles')
-            .select('id, profile:profiles!sitter_profiles_profile_id_fkey(city)')
-            .eq('is_founding', true);
-          count = (others.data||[]).filter(function(r){ return r.profile && String(r.profile.city).split(',')[0].trim() === city; }).length;
-        }
-        if (count < 200){ patch.is_founding = true; patch.review_fee_status = 'waived'; }
+        // First N sign-ups overall (Bilal: first 100), not per city.
+        var cap = F.FOUNDING_CAP || 100;
+        var founded = await sb.from('sitter_profiles').select('id', { count:'exact', head:true }).eq('is_founding', true);
+        if ((founded.count || 0) < cap){ patch.is_founding = true; patch.review_fee_status = 'waived'; }
       }
     } catch(e){ /* if columns missing, just submit normally */ }
 

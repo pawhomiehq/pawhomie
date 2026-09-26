@@ -46,7 +46,7 @@ Pages.sitterDashboard = {
 
     var badge = document.getElementById('sdStatus');
     if (badge){
-      var founding = (app && app.is_founding) ? '<span class="tag" style="background:var(--gold);color:#4A360A;margin-left:6px">⭐ Founding Paw Homie · 88% keep</span>' : '';
+      var founding = (app && app.is_founding) ? '<span class="tag" style="background:var(--gold);color:#4A360A;margin-left:6px">⭐ Founding Paw Homie · '+Math.round((1-((CONFIG.FEES&&CONFIG.FEES.FOUNDING_SITTER_RATE)||0.10))*100)+'% keep</span>' : '';
       badge.innerHTML = (isLive ? UI.tag('Live','ok')
         : (status==='pending' ? UI.tag('In review','gold')
         : UI.tag('Not live',''))) + founding;

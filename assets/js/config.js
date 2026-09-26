@@ -30,12 +30,14 @@ window.CONFIG = {
     PARENT_MAX:         25.00,  // parent fee never more than $25
     REVIEW_FEE:         29.00,  // one-time sitter application fee (refunded after 1st booking)
 
-    // Founding promo (first 200 sitters per city). Flip FOUNDING_ACTIVE to false
-    // when the promo ends; founding sitters stay locked by their profile flag.
+    // Launch promo (Bilal, 26 Sep): first 100 sign-ups keep 90% (10% fee) and
+    // the $29 review fee is waived. Flip FOUNDING_ACTIVE to false to end it;
+    // founding sitters stay locked by their profile flag.
     FOUNDING_ACTIVE:      true,
-    FOUNDING_SITTER_RATE: 0.12, // founding sitters keep 88%
-    FOUNDING_PARENT_RATE: 0.05, // founding-period parents pay 5%
-    FOUNDING_REVIEW_FEE:  0     // review fee waived for founding sitters
+    FOUNDING_CAP:         100,  // first 100 sign-ups (total, not per city)
+    FOUNDING_SITTER_RATE: 0.10, // promo sitters keep 90%
+    FOUNDING_PARENT_RATE: 0.07, // parents pay the standard 7% during the promo
+    FOUNDING_REVIEW_FEE:  0     // $29 review fee waived for promo sitters
   },
 
   // Back-compat: some older code still reads SERVICE_FEE_RATE. Keep it pointed
