@@ -1305,12 +1305,17 @@ window.db = {
 
   /* Platform-wide stats for the admin overview. */
   async getAdminStats() {
-    if (!LIVE()) return { owners:128, sitters:34, pending:3, activeBookings:12, completed:210, revenue:2640, newsletter:87 };
+    if (!LIVE()) return { owners:128, sitters:34, pending:3, activeBookings:12, completed:210, revenue:2640, newsletter:87, founding:34, foundingCap:((CONFIG.FEES&&CONFIG.FEES.FOUNDING_CAP)||100) };
     var out = { owners:0, sitters:0, pending:0, activeBookings:0, completed:0, revenue:0, newsletter:0 };
     var profs = await sb.from('profiles').select('is_owner, is_sitter');
     (profs.data||[]).forEach(function(p){ if (p.is_owner) out.owners++; if (p.is_sitter) out.sitters++; });
     var sp = await sb.from('sitter_profiles').select('status');
     (sp.data||[]).forEach(function(s){ if (s.status==='pending') out.pending++; });
+    // Founding-promo spots claimed (Bilal: first 100 keep 90% + waived $29 fee).
+    var F = (CONFIG.FEES)||{};
+    out.foundingCap = F.FOUNDING_CAP || 100;
+    var fc = await sb.from('sitter_profiles').select('id', { count:'exact', head:true }).eq('is_founding', true);
+    out.founding = fc.count || 0;
     var bk = await sb.from('bookings').select('status, service_fee, subtotal');
     var sRate = (CONFIG.FEES && CONFIG.FEES.SITTER_RATE) || 0.15;
     (bk.data||[]).forEach(function(b){

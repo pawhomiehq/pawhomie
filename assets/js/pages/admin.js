@@ -74,6 +74,7 @@ async function drawOverview(body){
       ${stat(s.completed, 'Completed stays')}
       ${stat(s.newsletter, 'Waitlist emails')}
     </div>
+    ${foundingBannerHTML(s)}
     ${s.pending ? `<div class="card anim d1 attn" data-sec-jump="applications" style="padding:16px;margin-top:14px;display:flex;align-items:center;gap:12px;cursor:pointer">
       <div class="qa-ic" style="width:42px;height:42px;margin:0;background:var(--tint2);color:var(--gold-dk)">${UI.icon('clock',20)}</div>
       <div style="flex:1"><b>${s.pending} application${s.pending>1?'s':''} waiting</b><div class="muted" style="font-size:12.5px">Review Paw Homie applications</div></div>
@@ -87,6 +88,33 @@ async function drawOverview(body){
     document.querySelectorAll('#adminNav .anav').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-sec')==='applications'); });
     drawSection();
   });
+}
+
+/* Founding-promo tracker — X / 100 spots claimed (Bilal: 10% rate + waived $29 fee). */
+function foundingBannerHTML(s){
+  var F = (CONFIG.FEES)||{};
+  if (!F.FOUNDING_ACTIVE) return '';
+  var cap  = s.foundingCap || F.FOUNDING_CAP || 100;
+  var used = Math.min(s.founding || 0, cap);
+  var left = Math.max(cap - used, 0);
+  var pct  = Math.round((used / cap) * 100);
+  var full = left === 0;
+  var keepPct = Math.round((1 - ((F.FOUNDING_SITTER_RATE)||0.10)) * 100);
+  return '<div class="card anim d1" style="padding:16px;margin-top:14px">'+
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'+
+      '<span style="color:var(--gold-dk)">'+UI.icon('check',18)+'</span>'+
+      '<b style="font-size:14.5px">Founding promo — '+used+' / '+cap+' spots claimed</b>'+
+      (full ? UI.tag('Cap reached','') : UI.tag(left+' left','gold'))+
+    '</div>'+
+    '<div style="height:9px;border-radius:99px;background:var(--tint2);overflow:hidden">'+
+      '<div style="height:100%;width:'+pct+'%;background:var(--gold-dk);border-radius:99px;transition:width .4s"></div>'+
+    '</div>'+
+    '<div class="muted" style="font-size:12px;margin-top:9px;line-height:1.45">'+
+      (full
+        ? 'The first '+cap+' Paw Homies are locked in at '+keepPct+'% keep with the $29 review fee waived. New sign-ups now get the standard rate.'
+        : 'Early Paw Homies keep '+keepPct+'% (10% fee) and skip the $29 review fee. New sign-ups get this automatically until the cap is hit.')+
+    '</div>'+
+  '</div>';
 }
 
 /* ---------- Applications (the review queue) ---------- */
