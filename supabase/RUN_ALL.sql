@@ -771,6 +771,253 @@ alter table messages add column if not exists read_at timestamptz;
 create index if not exists messages_unread_idx on messages(conversation_id) where read_at is null;
 
 
+-- ==================== 18_profile_photo.sql ====================
+-- =====================================================================
+-- PawHomie — profile photo (avatar) + editable profile
+-- Run in Supabase → SQL Editor.
+-- =====================================================================
+
+alter table profiles add column if not exists photo_url text;
+
+-- expose photo_url on the sitter search view so cards can show it
+drop view if exists sitter_cards;
+create view sitter_cards as
+select
+  sp.id,
+  p.full_name                                as name,
+  p.initial,
+  p.avatar_gold                              as gold,
+  p.photo_url                                as photo_url,
+  p.city                                     as city,
+  sp.rate_per_night                          as rate,
+  coalesce(round(avg(r.rating)::numeric, 1), 5.0) as rating,
+  count(r.id)                                as reviews,
+  sp.tags,
+  sp.reply_time                              as reply,
+  sp.about,
+  sp.verified,
+  sp.quiz_score,
+  sp.lat,
+  sp.lng
+from sitter_profiles sp
+join profiles p on p.id = sp.profile_id
+left join reviews r on r.sitter_id = sp.id
+where sp.published = true
+  and sp.status = 'approved'
+group by sp.id, p.full_name, p.initial, p.avatar_gold, p.photo_url, p.city, sp.quiz_score;
+
+-- profile pictures go in a public bucket (avatars are meant to be seen)
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
+
+drop policy if exists "upload own avatar" on storage.objects;
+create policy "upload own avatar" on storage.objects for insert to authenticated
+  with check ( bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text );
+
+drop policy if exists "update own avatar" on storage.objects;
+create policy "update own avatar" on storage.objects for update to authenticated
+  using ( bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text );
+
+drop policy if exists "avatars public read" on storage.objects;
+create policy "avatars public read" on storage.objects for select
+  using ( bucket_id = 'avatars' );
+
+-- =====================================================================
+-- message photo sharing
+-- =====================================================================
+alter table messages add column if not exists image_url text;
+
+-- reuse a bucket for chat images (private-ish; readable by conversation members)
+insert into storage.buckets (id, name, public)
+values ('chat-images', 'chat-images', true)
+on conflict (id) do nothing;
+
+drop policy if exists "upload own chat image" on storage.objects;
+create policy "upload own chat image" on storage.objects for insert to authenticated
+  with check ( bucket_id = 'chat-images' and (storage.foldername(name))[1] = auth.uid()::text );
+
+drop policy if exists "chat images read" on storage.objects;
+create policy "chat images read" on storage.objects for select
+  using ( bucket_id = 'chat-images' );
+
+
+-- ==================== 20_connect.sql ====================
+-- =====================================================================
+-- PawHomie — Stripe Connect (sitter payouts)
+-- Run in Supabase → SQL Editor.
+-- =====================================================================
+
+-- The sitter's connected Stripe account id (acct_...)
+alter table sitter_profiles add column if not exists stripe_account_id text;
+
+-- Whether Stripe has approved them to receive payouts (finished onboarding)
+alter table sitter_profiles add column if not exists payouts_enabled boolean not null default false;
+
+
+-- ==================== 21_auto_cancel.sql ====================
+-- =====================================================================
+-- PawHomie — 48-hour auto-cancel for unpaid/stale bookings
+-- Run in Supabase → SQL Editor.
+--
+-- Cancels any booking still 'pending' with no payment held after 48 hours,
+-- so it stops blocking the sitter and the owner sees it clearly closed.
+-- Runs automatically every hour via pg_cron.
+-- =====================================================================
+
+-- 1) Enable the scheduler extension (safe if already on).
+create extension if not exists pg_cron;
+
+-- 2) The function that does the cancelling.
+create or replace function auto_cancel_stale_bookings()
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update bookings
+  set status = 'cancelled'
+  where status = 'pending'
+    and coalesce(payment_status, 'none') = 'none'
+    and created_at < now() - interval '48 hours';
+$$;
+
+-- 3) Schedule it to run at the top of every hour.
+--    (Unschedule first so re-running this file doesn't create duplicates.)
+do $$
+declare jid int;
+begin
+  for jid in select jobid from cron.job where jobname = 'pawhomie_auto_cancel' loop
+    perform cron.unschedule(jid);
+  end loop;
+end $$;
+
+select cron.schedule(
+  'pawhomie_auto_cancel',
+  '0 * * * *',                       -- every hour, on the hour
+  $$ select auto_cancel_stale_bookings(); $$
+);
+
+-- To check it's scheduled:   select * from cron.job;
+-- To run it right now once:  select auto_cancel_stale_bookings();
+
+
+-- ==================== 22_address_parts.sql ====================
+-- =====================================================================
+-- PawHomie — structured Canadian address (Tier 4)
+-- Run in Supabase → SQL Editor.
+-- =====================================================================
+
+-- Structured address {unit, street, city, province, postal} on sitter profiles.
+alter table sitter_profiles add column if not exists address_parts jsonb;
+
+-- Sitter home/space photos (array of public URLs).
+alter table sitter_profiles add column if not exists home_photos jsonb not null default '[]'::jsonb;
+
+
+-- ==================== 23_profile_fields.sql ====================
+-- =====================================================================
+-- PawHomie — richer profiles (phone, bio) for owners & sitters
+-- Run in Supabase → SQL Editor.
+-- =====================================================================
+
+alter table profiles add column if not exists phone text;
+alter table profiles add column if not exists bio   text;
+
+-- Pet profile photo
+alter table pets add column if not exists photo_url text;
+
+
+-- ==================== 24_reminders.sql ====================
+-- =====================================================================
+-- PawHomie — day-before booking reminder (Tier 5)
+-- Run in Supabase → SQL Editor.
+--
+-- Every day, for accepted bookings that start TOMORROW, drop a reminder
+-- message into the conversation asking the owner to confirm the stay is
+-- still on. Runs via pg_cron. (Email reminders are sent by the app/notify
+-- function; this guarantees an in-app nudge even if nobody opens the app.)
+-- =====================================================================
+
+create extension if not exists pg_cron;
+
+-- avoid duplicate reminders: track which bookings we've reminded
+alter table bookings add column if not exists reminder_sent boolean not null default false;
+
+create or replace function send_booking_reminders()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  b record;
+  conv_id uuid;
+  owner_uid uuid;
+  sitter_uid uuid;
+begin
+  for b in
+    select bk.id, bk.owner_id, bk.sitter_id, bk.start_date, bk.end_date
+    from bookings bk
+    where bk.status = 'accepted'
+      and bk.reminder_sent = false
+      and bk.start_date = (current_date + 1)
+  loop
+    owner_uid := b.owner_id;
+    -- sitter_id on bookings references sitter_profiles; get that sitter's user id
+    select sp.profile_id into sitter_uid from sitter_profiles sp where sp.id = b.sitter_id;
+
+    if sitter_uid is not null then
+      -- find or create the conversation between this owner and sitter
+      select c.id into conv_id from conversations c
+        where c.owner_id = owner_uid and c.sitter_id = sitter_uid limit 1;
+      if conv_id is null then
+        insert into conversations (owner_id, sitter_id) values (owner_uid, sitter_uid)
+          returning id into conv_id;
+      end if;
+
+      -- message appears to come FROM the sitter, asking the owner to confirm
+      insert into messages (conversation_id, sender_id, body)
+      values (conv_id, sitter_uid,
+        'Hi! Just a friendly reminder that our booking starts tomorrow ('
+        || to_char(b.start_date, 'Mon DD') || '). Are we still all set? Please confirm here or let me know if anything changed. 🐾');
+    end if;
+
+    update bookings set reminder_sent = true where id = b.id;
+  end loop;
+end $$;
+
+-- run every day at 15:00 UTC (~10-11am Eastern)
+do $$
+declare jid int;
+begin
+  for jid in select jobid from cron.job where jobname = 'pawhomie_booking_reminders' loop
+    perform cron.unschedule(jid);
+  end loop;
+end $$;
+
+select cron.schedule('pawhomie_booking_reminders', '0 15 * * *',
+  $$ select send_booking_reminders(); $$);
+
+-- test now:  select send_booking_reminders();
+
+
+-- ==================== 25_founding_reviewfee.sql ====================
+-- =====================================================================
+-- PawHomie — founding sitters, review fee, loyalty (Bilal's fee spec)
+-- Run in Supabase → SQL Editor.
+-- =====================================================================
+
+-- Founding: first 200 sitters per city keep 88% (12% fee) + waived review fee.
+alter table sitter_profiles add column if not exists is_founding boolean not null default false;
+
+-- Review fee lifecycle: 'due' (owes $29) | 'waived' (founding) | 'paid' | 'refunded'
+alter table sitter_profiles add column if not exists review_fee_status text not null default 'due';
+
+-- The Stripe payment intent for the review fee (so we can refund it later).
+alter table sitter_profiles add column if not exists review_fee_intent text;
+
+
 -- MANUAL STEP if uploads say "Bucket not found":
 --   Storage → New bucket → sitter-docs → Private
 --   Storage → New bucket → owner-docs  → Private

@@ -27,7 +27,10 @@ Pages.services = {
       </div>`;
     }).join('');
 
-    var keepPct = Math.round((1 - ((CONFIG.FEES&&CONFIG.FEES.SITTER_RATE)||0.15)) * 100);
+    var F = (CONFIG.FEES)||{};
+    var myRate = F.SITTER_RATE||0.15;
+    try { var sid0 = await db.mySitterId(); if (sid0 && db.isFounding && await db.isFounding(sid0)) myRate = F.FOUNDING_SITTER_RATE||0.12; } catch(e){}
+    var keepPct = Math.round((1 - myRate) * 100);
     host.innerHTML = `
       <div class="card anim" style="padding:14px 16px;margin-bottom:12px;background:var(--tint);display:flex;gap:11px;align-items:center">
         <span style="color:var(--teal);flex:none">${UI.icon('wallet',20)}</span>

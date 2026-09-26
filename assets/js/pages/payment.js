@@ -51,9 +51,12 @@ Pages.payment = {
 
   async mount() {
     var s   = App.currentSitter;
-    var rate = (Booking.state.rate != null ? Booking.state.rate : s.rate);
-    var q   = Booking.quoteFor(rate, Booking.state.startDate, Booking.state.endDate);
     var B   = Booking.state;
+    var rate = (Booking.state.rate != null ? Booking.state.rate : s.rate);
+    // Applicable sitter fee rate: founding (12%) / loyalty (12%) / standard (15%).
+    var sitterRate = (CONFIG.FEES && CONFIG.FEES.SITTER_RATE) || 0.15;
+    try { var me = await db.currentUser(); sitterRate = await db.getSitterFeeRate(s.id, me ? me.id : null); } catch(e){}
+    var q   = Booking.quoteFor(rate, Booking.state.startDate, Booking.state.endDate, { sitterRate: sitterRate });
     var btn = document.getElementById('payBtn');
     var err = document.getElementById('payError');
     var cardErrors = document.getElementById('cardErrors');

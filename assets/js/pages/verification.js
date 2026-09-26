@@ -81,6 +81,13 @@ async function drawV(){
       <span class="step-go">${quizDone?'Retake':'Start'} \u203a</span>
     </div>
 
+    <div class="card anim d2" style="padding:14px 16px;margin-top:16px;display:flex;gap:11px;align-items:flex-start;background:var(--tint2,#FBF3E0);border:1px solid #F0DCA8">
+      <span style="color:var(--gold-dk);flex:none;margin-top:1px">${UI.icon('wallet',18)}</span>
+      <div style="font-size:12.5px;color:#5b4a1e;font-weight:600;line-height:1.5">
+        <b>Founding offer:</b> the $${(CONFIG.FEES&&CONFIG.FEES.REVIEW_FEE)||29} profile review fee is <b>waived</b> for our first 200 Paw Homies per city — and you’ll keep <b>88%</b> of every booking (vs 85% standard) for your founding period. Otherwise the review fee is refunded after your first completed booking.
+      </div>
+    </div>
+
     <div id="vErr" class="authError" style="display:none;margin-top:14px"></div>
     <div style="height:16px"></div>
     <button class="btn" id="submitApp" ${detailsDone&&quizDone?'':'disabled'}>Submit application</button>

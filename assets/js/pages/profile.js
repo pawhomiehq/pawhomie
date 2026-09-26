@@ -61,6 +61,19 @@ Pages.profile = {
     var v=document.getElementById('videoCta');
     if(v) v.addEventListener('click', function(){ window.Video.openSheet(); });
 
+    // Founding Paw Homie badge (trust signal for owners)
+    if (App.currentSitter && db.isFounding){
+      db.isFounding(App.currentSitter.id).then(function(f){
+        if (!f) return;
+        var host = document.querySelector('.verified');
+        if (host){
+          var b = document.createElement('div');
+          b.innerHTML = '<span class="tag" style="background:var(--gold);color:#4A360A;margin-top:8px;display:inline-flex">⭐ Founding Paw Homie</span>';
+          host.parentNode.insertBefore(b.firstChild, host.nextSibling);
+        }
+      }).catch(function(){});
+    }
+
     // home photos strip
     var hpBox = document.getElementById('profileHomePhotos');
     if (hpBox && App.currentSitter && db.getHomePhotos){

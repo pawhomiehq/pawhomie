@@ -267,6 +267,10 @@ Pages.welcome = {
           <a data-nav="faq">FAQ</a>
           <a data-go="privacy">Privacy</a>
           <a data-go="terms">Terms</a>
+          <a data-go="feeSchedule">Fees &amp; Cancellation</a>
+          <a data-go="safety">Safety</a>
+          <a data-go="guarantee">Guarantee</a>
+          <a data-go="homieAgreement">Paw Homie Agreement</a>
           <a href="mailto:support@pawhomie.com">support@pawhomie.com</a>
         </div>
         <div class="foot-note">\u00a9 2026 PawHomie \u00b7 Serving the Greater Toronto Area</div>

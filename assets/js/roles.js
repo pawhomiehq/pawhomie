@@ -16,6 +16,10 @@ window.ACCESS = {
   privacy: 'public',
   resetPassword: 'public',
   terms: 'public',
+  guarantee: 'public',
+  homieAgreement: 'public',
+  safety: 'public',
+  feeSchedule: 'public',
   /* --- anyone, logged in or not --- */
   welcome:        'public',
   search:         'public',   // browsing builds trust before signup

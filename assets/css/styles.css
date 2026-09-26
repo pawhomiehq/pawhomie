@@ -771,3 +771,12 @@ input[type="date"]{max-width:100%;box-sizing:border-box}
 .km-year{max-width:max-content;margin:16px auto 0;background:var(--gold);color:#4A360A;font-weight:800;
   font-size:14.5px;padding:12px 22px;border-radius:99px;text-align:center}
 @media(max-width:460px){ .km-amt{font-size:30px} .km-vs{width:38px;height:38px;font-size:12px} }
+
+/* legal page tables + headings (Bilal's finalized docs) */
+.legal h1{font-size:22px;color:var(--teal-dk);margin:0 0 10px}
+.legal h3{font-size:14px;font-weight:800;color:var(--ink);margin:14px 0 6px}
+.legal table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
+.legal th,.legal td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.legal th{background:var(--tint);font-weight:800;color:var(--teal-dk)}
+.legal strong,.legal b{color:var(--ink)}
+.legal a{color:var(--teal);word-break:break-word}

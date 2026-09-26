@@ -1028,7 +1028,7 @@ window.db = {
     var sid = await this.mySitterId();
     if (!sid) return null;
     var res = await sb.from('sitter_profiles')
-      .select('status, quiz_score, quiz_passed, applied_at, phone, address, address_parts, home_type, has_yard, documents')
+      .select('status, quiz_score, quiz_passed, applied_at, phone, address, address_parts, home_type, has_yard, documents, is_founding, review_fee_status')
       .eq('id', sid).single();
     if (res.error) {
       console.error('getApplication (full):', res.error.message);
@@ -1187,10 +1187,60 @@ window.db = {
     }
     var sid = await this.mySitterId();
     if (!sid) throw new Error('No sitter profile.');
-    var res = await sb.from('sitter_profiles')
-      .update({ status:'pending', applied_at:new Date().toISOString() }).eq('id', sid);
-    if (res.error) throw res.error;
-    return { ok:true };
+    var F = (CONFIG.FEES) || {};
+
+    // Founding check: first 200 sitters per city get founding status (88% keep, $0 review fee).
+    var patch = { status:'pending', applied_at:new Date().toISOString() };
+    try {
+      var me = await sb.from('sitter_profiles')
+        .select('is_founding, review_fee_status, profile:profiles!sitter_profiles_profile_id_fkey(city)')
+        .eq('id', sid).single();
+      var already = me.data || {};
+      if (F.FOUNDING_ACTIVE && !already.is_founding){
+        var city = already.profile && already.profile.city ? String(already.profile.city).split(',')[0].trim() : '';
+        var count = 0;
+        if (city){
+          var others = await sb.from('sitter_profiles')
+            .select('id, profile:profiles!sitter_profiles_profile_id_fkey(city)')
+            .eq('is_founding', true);
+          count = (others.data||[]).filter(function(r){ return r.profile && String(r.profile.city).split(',')[0].trim() === city; }).length;
+        }
+        if (count < 200){ patch.is_founding = true; patch.review_fee_status = 'waived'; }
+      }
+    } catch(e){ /* if columns missing, just submit normally */ }
+
+    var res = await sb.from('sitter_profiles').update(patch).eq('id', sid);
+    if (res.error){
+      // fall back without the new columns (DB not migrated yet)
+      var res2 = await sb.from('sitter_profiles').update({ status:'pending', applied_at:new Date().toISOString() }).eq('id', sid);
+      if (res2.error) throw res2.error;
+    }
+    return { ok:true, founding: !!patch.is_founding };
+  },
+
+  /* The sitter fee rate that applies to a booking:
+     founding (12%) → loyalty after 4 completed together (12%) → standard (15%). */
+  async getSitterFeeRate(sitterProfileId, ownerId) {
+    var F = (CONFIG.FEES) || {};
+    var std = F.SITTER_RATE || 0.15;
+    if (!LIVE()) return std;
+    try {
+      var sp = await sb.from('sitter_profiles').select('is_founding').eq('id', sitterProfileId).single();
+      if (F.FOUNDING_ACTIVE && sp.data && sp.data.is_founding) return F.FOUNDING_SITTER_RATE || 0.12;
+      if (ownerId){
+        var done = await sb.from('bookings').select('id', { count:'exact', head:true })
+          .eq('sitter_id', sitterProfileId).eq('owner_id', ownerId).eq('status','completed');
+        if ((done.count||0) >= 4) return F.SITTER_LOYAL_RATE || 0.12;
+      }
+    } catch(e){ /* fall through to standard */ }
+    return std;
+  },
+
+  /* Is this sitter a Founding Paw Homie? (for the badge) */
+  async isFounding(sitterProfileId) {
+    if (!LIVE()) return false;
+    try { var r = await sb.from('sitter_profiles').select('is_founding').eq('id', sitterProfileId).single();
+      return !!(r.data && r.data.is_founding); } catch(e){ return false; }
   },
 
   /* Save the quiz result. Passing unlocks the application form but does
