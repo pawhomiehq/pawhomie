@@ -18,7 +18,7 @@ Pages.payment = {
       <div class="row-sb" style="margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:10px">
           ${UI.avatar(s.initial,{size:38,fs:14,gold:s.gold})}
-          <div><div style="font-weight:800;font-size:14px">${s.name}</div>
+          <div><div style="font-weight:800;font-size:14px">${esc(s.name)}</div>
                <div class="muted" style="font-size:12px">${fmtRange(Booking.state.startDate, Booking.state.endDate)} · ${q.nights} night${plural}</div></div>
         </div>
       </div>

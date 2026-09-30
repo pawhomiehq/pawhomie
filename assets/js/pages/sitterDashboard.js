@@ -113,7 +113,7 @@ async function renderRequests(){
     return `<div class="card anim reqcard" data-id="${r.id}" style="padding:14px;margin-bottom:10px;display:flex;gap:13px;align-items:center;flex-wrap:wrap">
       ${UI.avatar(r.initial,{size:46,fs:17,gold:r.gold})}
       <div style="flex:1;min-width:150px">
-        <div style="font-weight:800">${r.name}${r.pet?' \u00b7 '+r.pet:''}</div>
+        <div style="font-weight:800">${esc(r.name)}${r.pet?' \u00b7 '+esc(r.pet):''}</div>
         <div class="muted" style="font-size:12.5px">${window.serviceLabel(r.kind)} \u00b7 ${r.dates} \u00b7 ${r.price}</div>
       </div>
       <div style="display:flex;gap:8px">

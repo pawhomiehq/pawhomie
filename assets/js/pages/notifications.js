@@ -34,8 +34,8 @@ Pages.notifications = {
       return `<div class="card anim notif${n.read ? '' : ' unread'}" style="padding:14px;display:flex;gap:12px;align-items:flex-start;margin-bottom:10px">
         <div class="qa-ic" style="width:40px;height:40px;margin:0;background:${meta.tint};color:var(--teal);flex:none">${UI.icon(meta.ic,18)}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:14px">${n.title}</div>
-          ${n.body ? `<div class="muted" style="font-size:12.5px;margin-top:2px;line-height:1.45">${n.body}</div>` : ''}
+          <div style="font-weight:700;font-size:14px">${esc(n.title)}</div>
+          ${n.body ? `<div class="muted" style="font-size:12.5px;margin-top:2px;line-height:1.45">${esc(n.body)}</div>` : ''}
           <div class="muted" style="font-size:11.5px;margin-top:4px">${timeAgoLabel(n.created_at)}</div>
         </div>
         ${n.read ? '' : '<span class="notif-dot"></span>'}

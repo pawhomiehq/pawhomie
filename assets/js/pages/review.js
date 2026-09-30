@@ -13,7 +13,7 @@ Pages.review = {
     <div class="page narrow">
       <div class="card anim" style="padding:22px;text-align:center">
         ${UI.avatar(r.initial,{size:60,fs:22,gold:r.gold})}
-        <div style="font-weight:800;margin-top:10px">${r.sitterName}</div>
+        <div style="font-weight:800;margin-top:10px">${esc(r.sitterName)}</div>
         <div id="starRow" style="font-size:34px;letter-spacing:6px;margin-top:12px;cursor:pointer;color:var(--gold)">
           <span data-star="1">\u2605</span><span data-star="2">\u2605</span><span data-star="3">\u2605</span><span data-star="4">\u2605</span><span data-star="5">\u2605</span>
         </div>

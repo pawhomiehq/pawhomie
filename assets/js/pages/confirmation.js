@@ -3,12 +3,12 @@
 Pages.confirmation = {
   render() {
     var s     = App.currentSitter;
-    var first = s.name.split(' ')[0];
+    var first = esc(s.name.split(' ')[0]);
     var last  = App.lastBooking;
     var q     = last ? last.quote : Booking.quote(s.rate);
     var dates = last ? fmtRange(last.dates.start, last.dates.end)
                      : fmtRange(Booking.state.startDate, Booking.state.endDate);
-    var petName = (App.lastPetName || 'your pet');
+    var petName = esc(App.lastPetName || 'your pet');
 
     return `
   <div class="page narrow">
@@ -21,7 +21,7 @@ Pages.confirmation = {
       <div class="card" style="width:100%;max-width:420px;padding:14px 16px;margin-top:24px;text-align:left;display:flex;gap:12px;align-items:center">
         ${UI.avatar(s.initial,{size:44,fs:16,gold:s.gold})}
         <div style="flex:1">
-          <div style="font-weight:800">${s.name}</div>
+          <div style="font-weight:800">${esc(s.name)}</div>
           <div class="muted" style="font-size:12.5px">House sitting · ${Booking.money(q.total)} · held until complete</div>
         </div>
       </div>

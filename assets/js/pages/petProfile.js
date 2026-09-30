@@ -89,7 +89,7 @@ function drawForm(host){
             <option${p.species==='Cat'?' selected':''}>Cat</option>
           </select></div>
         <div style="flex:1"><div class="label">Breed</div>
-          <input class="field" id="pBreed" value="${p.breed || ''}" placeholder="Beagle"></div>
+          <input class="field" id="pBreed" value="${esc(p.breed || '')}" placeholder="Beagle"></div>
       </div>
       <div class="label" style="margin-top:14px">Age (years)</div>
       <input class="field" id="pAge" type="number" min="0" max="30" value="${p.age_years != null ? p.age_years : ''}" placeholder="4">

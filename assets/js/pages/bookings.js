@@ -45,9 +45,9 @@ Pages.bookings = {
       return `<div class="card anim bkcard" data-booking="${b.id}" style="padding:14px;margin-bottom:10px;display:flex;gap:13px;align-items:center;cursor:pointer">
         ${UI.avatar(b.initial,{size:48,fs:18,gold:b.gold})}
         <div style="flex:1;min-width:0">
-          <div style="font-weight:800;font-size:15px">${b.sitterName}</div>
-          <div class="muted" style="font-size:12.5px;margin-top:2px">${b.petName?b.petName+' \u00b7 ':''}${b.dates} \u00b7 ${Booking.money(b.total)}</div>
-          ${isPending ? '<div class="muted" style="font-size:11.5px;margin-top:5px">\u23f3 Waiting for '+b.sitterName.split(' ')[0]+' to accept</div>' : ''}
+          <div style="font-weight:800;font-size:15px">${esc(b.sitterName)}</div>
+          <div class="muted" style="font-size:12.5px;margin-top:2px">${b.petName?esc(b.petName)+' \u00b7 ':''}${b.dates} \u00b7 ${Booking.money(b.total)}</div>
+          ${isPending ? '<div class="muted" style="font-size:11.5px;margin-top:5px">\u23f3 Waiting for '+esc(b.sitterName.split(' ')[0])+' to accept</div>' : ''}
         </div>
         ${UI.tag(LABEL[b.status]||b.status, TONE[b.status]||'')}
       </div>`;

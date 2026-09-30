@@ -131,7 +131,7 @@ Pages.booking = {
         return `<div class="card petOpt ${p.id===B.petId?'on':''}" data-pet="${p.id}"
              style="padding:12px;display:flex;align-items:center;gap:11px;cursor:pointer;margin-bottom:8px">
           ${UI.avatar(p.name.charAt(0).toUpperCase(),{size:42,fs:16})}
-          <div><div style="font-weight:800">${p.name}</div><div class="muted" style="font-size:12px">${sub}</div></div>
+          <div><div style="font-weight:800">${esc(p.name)}</div><div class="muted" style="font-size:12px">${esc(sub)}</div></div>
         </div>`;
       }).join('');
       box.querySelectorAll('[data-pet]').forEach(function(el){
