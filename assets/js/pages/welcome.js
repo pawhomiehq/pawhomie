@@ -54,7 +54,7 @@ Pages.welcome = {
           <div class="ic">${UI.icon('cal',18)}</div>
           <div class="kv"><div class="k">When</div><div class="v" id="whenVal">${fmtRange(Booking.state.startDate, Booking.state.endDate)}</div></div>
           <span class="cell-go">\u25be</span>
-          <div class="dropdown" id="whenMenu" style="padding:14px;min-width:240px">
+          <div class="dropdown datemenu" id="whenMenu">
             <div class="label">Drop-off</div>
             <input class="field" type="date" id="whenStart" value="${Booking.state.startDate}" min="${isoDate(new Date())}">
             <div class="label" style="margin-top:10px">Pick-up</div>

@@ -10,6 +10,9 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth}
+/* Never allow sideways scroll on phones — decorative blobs / wide rows must not
+   push the page wider than the screen (this is what made mobile feel "cut off"). */
+html,body{overflow-x:hidden;max-width:100%}
 body{font-family:'Nunito',system-ui,sans-serif;color:var(--ink);min-height:100vh;font-size:17px;line-height:1.5;
   background:
     radial-gradient(1200px 700px at 88% -5%, #FBEBCF 0%, rgba(251,235,207,0) 55%),
@@ -475,6 +478,17 @@ input[type="date"]{font-family:inherit}
 .dd-tick{color:var(--teal);opacity:0;flex:none}
 .dd-item.on .dd-tick{opacity:1}
 
+/* When (date) picker menu — must never overflow a narrow / in-app browser.
+   16px inputs stop iOS Safari from zooming in on focus; min-width:0 lets the
+   native date control shrink inside the panel instead of spilling past it. */
+.datemenu{padding:14px;max-width:calc(100vw - 24px)}
+.datemenu .label{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.datemenu .field{width:100%;min-width:0;box-sizing:border-box;font-size:16px;min-height:48px}
+.datemenu .btn.sm{width:100%}
+/* Every date field, app-wide (reschedule modal etc.): 16px stops iOS zoom-on-focus,
+   min-width:0 + border-box keep the native control inside its container. */
+input[type="date"].field{font-size:16px;min-width:0;box-sizing:border-box;min-height:48px}
+
 /* ---------- step icons (one per step, not paws) ---------- */
 .step-dot{background:var(--tint);color:var(--teal);box-shadow:0 0 0 6px rgba(33,112,111,.10)}
 .step-dot svg{display:block}
@@ -506,7 +520,7 @@ input[type="date"]{font-family:inherit}
 .news{width:100%;max-width:420px;text-align:center}
 .news-t{color:#CFE6E1;font-size:13.5px;font-weight:700;margin-bottom:10px}
 .news-row{display:flex;gap:8px}
-.news-row input{flex:1;border:none;border-radius:12px;padding:12px 14px;font-family:inherit;font-size:14px;font-weight:600;background:#fff;color:var(--ink)}
+.news-row input{flex:1;min-width:0;border:none;border-radius:12px;padding:12px 14px;font-family:inherit;font-size:14px;font-weight:600;background:#fff;color:var(--ink)}
 .news-row input:focus{outline:2px solid var(--gold)}
 .news-row .btn.sm{background:var(--gold);color:#4A360A;flex:none}
 .news-msg{font-size:12.5px;font-weight:700;margin-top:8px;min-height:16px}
@@ -754,8 +768,13 @@ input[type="date"]{max-width:100%;box-sizing:border-box}
 .km-pill{display:block;width:max-content;margin:0 auto 16px;background:#F2E8CF;color:#5b4a1e;font-weight:800;
   font-size:13px;letter-spacing:.08em;padding:8px 20px;border-radius:99px}
 .km-card{background:#fff;border-radius:24px;padding:28px 22px;box-shadow:0 20px 50px rgba(0,0,0,.18)}
-.km-cols{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.km-col{flex:1;text-align:center;min-width:0}
+.km-cols{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.km-col{flex:1;text-align:center;min-width:0;display:flex;flex-direction:column;align-items:center}
+/* keep the two columns lined up row-for-row: fixed heights on the shared rows
+   so LABEL / badge / amount sit at the same y in both columns. */
+.km-label{min-height:20px;display:flex;align-items:center}
+.km-badge{margin:8px 0}
+.km-amt{min-height:42px;display:flex;align-items:center;justify-content:center}
 .km-label{font-weight:800;font-size:14px;letter-spacing:.04em;color:#8a938f}
 .km-badge{display:inline-block;font-weight:800;font-size:13px;border-radius:99px;padding:5px 14px;margin:8px 0}
 .km-badge.gray{background:#eceeed;color:#8a938f}
@@ -766,11 +785,22 @@ input[type="date"]{max-width:100%;box-sizing:border-box}
 .km-sub{font-size:13px;color:#6E7B78;margin-top:4px}
 .km-more{color:#22a06b;font-weight:900;font-size:17px;margin-top:6px}
 .km-vs{flex:none;width:44px;height:44px;border-radius:50%;background:#eafff4;color:var(--teal);
-  font-weight:900;font-size:14px;display:grid;place-items:center;border:2px solid #d6f3e5}
+  font-weight:900;font-size:14px;display:grid;place-items:center;border:2px solid #d6f3e5;
+  margin-top:58px}   /* line the VS up with the price row (label + badge above it) */
 .km-break{border-top:1px solid var(--line);margin-top:20px;padding-top:14px;text-align:center;font-size:12.5px;color:#6E7B78}
 .km-year{max-width:max-content;margin:16px auto 0;background:var(--gold);color:#4A360A;font-weight:800;
   font-size:14.5px;padding:12px 22px;border-radius:99px;text-align:center}
-@media(max-width:460px){ .km-amt{font-size:30px} .km-vs{width:38px;height:38px;font-size:12px} }
+@media(max-width:460px){ .km-amt{font-size:30px} .km-vs{width:38px;height:38px;font-size:12px;margin-top:56px} }
+@media(max-width:360px){
+  .km-card{padding:22px 16px}
+  .km-cols{gap:4px}
+  .km-amt{font-size:25px}
+  .km-vs{width:32px;height:32px;font-size:11px;margin-top:52px}
+  .km-amt{min-height:34px}
+  .km-badge{font-size:12px;padding:4px 10px}
+  .km-sub{font-size:12px}
+  .km-more{font-size:15px}
+}
 
 /* legal page tables + headings (Bilal's finalized docs) */
 .legal h1{font-size:22px;color:var(--teal-dk);margin:0 0 10px}
