@@ -374,17 +374,11 @@ window.db = {
     }
     var user = await this.currentUser();
     if (!user) return null;
-    var res = await sb.from('profiles')
-      .select('id, full_name, initial, avatar_gold, photo_url, phone, bio, is_owner, is_sitter, is_admin, city')
-      .eq('id', user.id).maybeSingle();
-    if (res.error) {
-      console.error('getProfile (full):', res.error.message);
-      // fall back without the newest optional columns so profile still loads
-      res = await sb.from('profiles')
-        .select('id, full_name, initial, avatar_gold, photo_url, is_owner, is_sitter, is_admin, city')
-        .eq('id', user.id).maybeSingle();
-      if (res.error){ console.error('getProfile (basic):', res.error.message); return null; }
-    }
+    // Your own full profile comes through a secure function so your phone/ID stay
+    // private from other users (see supabase/27_pii_lockdown.sql).
+    var res = await sb.rpc('my_profile');
+    if (res.error) { console.error('getProfile (rpc):', res.error.message); return null; }
+    res = { data: res.data || null };
     if (!res.data) {
       // No profile row yet (e.g. account made before the trigger existed).
       // Create one now so the person can actually use the app.
@@ -394,7 +388,7 @@ window.db = {
         id: user.id,
         full_name: name,
         is_owner: true, is_sitter: false, is_admin: false
-      }).select('id, full_name, initial, avatar_gold, photo_url, phone, bio, is_owner, is_sitter, is_admin, city').single();
+      }).select('id, full_name, initial, avatar_gold, photo_url, bio, is_owner, is_sitter, is_admin, city').single();
       if (ins.error) { console.error('getProfile backfill:', ins.error.message); return null; }
       window.App.profile = ins.data;
       return ins.data;
@@ -501,8 +495,8 @@ window.db = {
     }
     if (prof && prof.is_owner){
       try {
-        var ov = await sb.from('profiles').select('id_status').eq('id', user.id).single();
-        if (ov.data && (ov.data.id_status==='unverified' || ov.data.id_status==='rejected')) out.ownerVerifyAction = true;
+        var ov = await sb.rpc('my_profile');
+        if (ov.data && (ov.data.id_status==='unverified' || ov.data.id_status==='rejected' || !ov.data.id_status)) out.ownerVerifyAction = true;
       } catch(e){ /* ignore */ }
     }
     return out;
@@ -1032,18 +1026,11 @@ window.db = {
     if (!LIVE()) return window.MOCK.application || { status:'draft', quiz_score:null, quiz_passed:false, phone:'', address:'', home_type:'', has_yard:false, documents:{} };
     var sid = await this.mySitterId();
     if (!sid) return null;
-    var res = await sb.from('sitter_profiles')
-      .select('status, quiz_score, quiz_passed, applied_at, phone, address, address_parts, home_type, has_yard, documents, is_founding, review_fee_status')
-      .eq('id', sid).single();
-    if (res.error) {
-      console.error('getApplication (full):', res.error.message);
-      var basic = await sb.from('sitter_profiles')
-        .select('status, quiz_score, quiz_passed, applied_at, phone, address, home_type, has_yard, documents')
-        .eq('id', sid).single();
-      if (basic.error){ console.error('getApplication (basic):', basic.error.message); return null; }
-      return basic.data;
-    }
-    return res.data;
+    // Own application via a secure function so your phone/address/documents stay
+    // private from other users.
+    var res = await sb.rpc('my_sitter_application');
+    if (res.error) { console.error('getApplication (rpc):', res.error.message); return null; }
+    return res.data || null;
   },
 
   /* Upload one document to the private sitter-docs bucket.
@@ -1099,9 +1086,9 @@ window.db = {
     if (!LIVE()) return window.MOCK.ownerVerification || { id_status:'unverified', id_document:'' };
     var user = await this.currentUser();
     if (!user) return null;
-    var res = await sb.from('profiles').select('id_status, id_document, id_submitted_at').eq('id', user.id).single();
-    if (res.error) { console.error('getOwnerVerification:', res.error.message); return null; }
-    return res.data;
+    var res = await sb.rpc('my_profile');
+    if (res.error || !res.data) { console.error('getOwnerVerification:', res.error && res.error.message); return null; }
+    return { id_status: res.data.id_status, id_document: res.data.id_document, id_submitted_at: res.data.id_submitted_at };
   },
 
   /* Upload an owner document (kind: 'id' | 'pet-<petId>-vax') to owner-docs. */
@@ -1158,11 +1145,8 @@ window.db = {
   /* ---- admin: owner ID review ---- */
   async getOwnerApplicants(which) {
     if (!LIVE()) return window.MOCK.ownerApplicants || [];
-    var q = sb.from('profiles')
-      .select('id, full_name, initial, avatar_gold, city, id_status, id_document, id_submitted_at')
-      .neq('id_status', 'unverified').order('id_submitted_at', { ascending:true });
-    if (which && which !== 'all') q = q.eq('id_status', which);
-    var res = await q;
+    // Admin-only, via a secure function (owners' ID data isn't exposed broadly).
+    var res = await sb.rpc('admin_owner_applicants', { which: which || 'all' });
     if (res.error) { console.error('getOwnerApplicants:', res.error.message); return []; }
     return (res.data||[]).map(function(p){
       return { id:p.id, name:p.full_name||'Owner', initial:p.initial||'?', gold:!!p.avatar_gold,
@@ -1264,13 +1248,9 @@ window.db = {
   async getApplicants(which) {
     // which: 'pending' | 'approved' | 'rejected' | 'all'
     if (!LIVE()) return window.MOCK.applicants || [];
-    var q = sb.from('sitter_profiles')
-      .select('id, status, quiz_score, quiz_passed, about, rate_per_night, applied_at,' +
-              ' phone, address, home_type, has_yard, documents,' +
-              ' profile:profiles!sitter_profiles_profile_id_fkey(full_name, initial, avatar_gold, city)')
-      .order('applied_at', { ascending:true });
-    if (which && which !== 'all') q = q.eq('status', which);
-    var res = await q;
+    // Admin-only, via a secure function (sitters' phone/address/documents aren't
+    // exposed broadly).
+    var res = await sb.rpc('admin_sitter_applicants', { which: which || 'all' });
     if (res.error) { console.error('getApplicants:', res.error.message); return []; }
     return (res.data || []).map(function(s){
       var p = s.profile || {};
