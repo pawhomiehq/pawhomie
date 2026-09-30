@@ -32,11 +32,82 @@ window.pawGlyph = function(color, sz){
    Uses a real photo if one exists at assets/img/photos/<slot>.jpg,
    otherwise falls back to our own illustration. So dropping a photo
    into that folder is all it takes — no code change. */
-function photo(slot, style){
+function photo(slot, style, zoom){
   var art = 'assets/img/art/' + slot + '.svg';
-  return '<img class="ph" alt="" loading="lazy" style="' + (style || '') + '"' +
+  return '<img class="ph' + (zoom ? ' zoomable' : '') + '" alt="" loading="lazy" style="' + (style || '') + '"' +
          ' src="assets/img/photos/' + slot + '.jpg"' +
          " onerror=\"this.onerror=null;this.src='" + art + "'\">";
+}
+
+/* Full-screen image viewer with swipe / arrows to move between photos.
+   Call UI.lightbox(list, start) where list is one URL or an array of URLs.
+   Tap outside, press Esc, or hit the × to close. Also opens automatically
+   when any <img class="zoomable"> is clicked (wired once, below): if that
+   image sits inside a [data-gallery] container, the whole group is browsable. */
+function lightbox(list, start){
+  if (typeof list === 'string') list = [list];
+  if (!list || !list.length) return;
+  var i = Math.max(0, Math.min(start || 0, list.length - 1));
+
+  var ov = document.createElement('div');
+  ov.className = 'lightbox';
+  ov.innerHTML =
+    '<button class="lb-x" aria-label="Close">×</button>' +
+    '<button class="lb-nav lb-prev" aria-label="Previous">‹</button>' +
+    '<figure class="lb-stage"><img alt=""><figcaption class="lb-count"></figcaption></figure>' +
+    '<button class="lb-nav lb-next" aria-label="Next">›</button>';
+
+  var img   = ov.querySelector('img');
+  var count = ov.querySelector('.lb-count');
+  var prevB = ov.querySelector('.lb-prev');
+  var nextB = ov.querySelector('.lb-next');
+  var multi = list.length > 1;
+  prevB.hidden = nextB.hidden = !multi;
+
+  function show(){
+    img.src = list[i];
+    count.textContent = multi ? (i + 1) + ' / ' + list.length : '';
+  }
+  function go(d){ i = (i + d + list.length) % list.length; show(); }
+  function close(){ ov.remove(); document.removeEventListener('keydown', key); }
+  function key(e){ if (e.key === 'Escape') close(); else if (e.key === 'ArrowLeft') go(-1); else if (e.key === 'ArrowRight') go(1); }
+
+  ov.addEventListener('click', function(e){
+    if (e.target === prevB){ go(-1); return; }
+    if (e.target === nextB){ go(1); return; }
+    if (e.target === img){ return; }   // tapping the photo does nothing
+    close();                            // tapping the backdrop / × closes
+  });
+  // touch swipe
+  var x0 = null;
+  ov.addEventListener('touchstart', function(e){ x0 = e.touches[0].clientX; }, {passive:true});
+  ov.addEventListener('touchend', function(e){
+    if (x0 == null) return;
+    var dx = e.changedTouches[0].clientX - x0; x0 = null;
+    if (Math.abs(dx) > 45){ go(dx < 0 ? 1 : -1); }
+  });
+  document.addEventListener('keydown', key);
+  document.body.appendChild(ov);
+  show();
+}
+// one delegated listener, page-agnostic. A zoomable image inside a [data-gallery]
+// opens the whole group (browsable); on its own it opens just itself.
+if (!window.__zoomWired){
+  window.__zoomWired = true;
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    var img = t && t.closest ? t.closest('img.zoomable') : null;
+    if (!img || !img.src) return;
+    e.preventDefault();
+    var group = img.closest('[data-gallery]');
+    if (group){
+      var imgs = Array.prototype.slice.call(group.querySelectorAll('img.zoomable'));
+      var list = imgs.map(function(n){ return n.getAttribute('data-full') || n.src; });
+      lightbox(list, imgs.indexOf(img));
+    } else {
+      lightbox(img.getAttribute('data-full') || img.src);
+    }
+  });
 }
 
 function avatar(initial, opts){ opts=opts||{}; var sz=opts.size||44; var fs=opts.fs||Math.round(sz*.36);
@@ -183,4 +254,4 @@ function readAddress(prefix){
 }
 
 window.UI = {
-  skeleton:function(n){ n=n||3; var o=''; for(var i=0;i<n;i++) o+='<div class="card skel skel-card"></div>'; return o; }, icon, photo, avatar, tag, appbar, backBtn, renderNav, NO_TAB, toast, addressFields, readAddress };
+  skeleton:function(n){ n=n||3; var o=''; for(var i=0;i<n;i++) o+='<div class="card skel skel-card"></div>'; return o; }, icon, photo, avatar, tag, appbar, backBtn, renderNav, NO_TAB, toast, addressFields, readAddress, lightbox };

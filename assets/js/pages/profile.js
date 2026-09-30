@@ -25,11 +25,10 @@ Pages.profile = {
           <div class="sec first">About</div>
           <p style="font-size:14px;line-height:1.55;color:#40504D;font-weight:600">${s.about}</p>
           <div class="sec">Home & walk area</div>
-          <div style="display:flex;gap:10px">${UI.photo('home','flex:1;height:100px;border-radius:14px')}${UI.photo('walk','flex:1;height:100px;border-radius:14px')}</div>
+          <div id="homeWalkArea" style="display:flex;gap:10px">${UI.photo('home','flex:1;height:100px;border-radius:14px;object-fit:cover')}${UI.photo('walk','flex:1;height:100px;border-radius:14px;object-fit:cover')}</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">${s.tags.map(function(t){return UI.tag(t);}).join('')}${UI.tag('Non-smoking')}</div>
           <div class="sec">Services &amp; rates</div>
           <div id="profileServices"><div class="muted" style="font-size:13px;padding:6px">Loading services…</div></div>
-          <div id="profileHomePhotos"></div>
           <div class="sec">Recent reviews</div>
           <div id="profileReviews"><div class="muted" style="font-size:13px;padding:10px">Loading reviews…</div></div>
         </div>
@@ -74,17 +73,36 @@ Pages.profile = {
       }).catch(function(){});
     }
 
-    // home photos strip
-    var hpBox = document.getElementById('profileHomePhotos');
-    if (hpBox && App.currentSitter && db.getHomePhotos){
-      db.getHomePhotos(App.currentSitter.id).then(function(photos){
-        if (!photos || !photos.length){ hpBox.innerHTML=''; return; }
-        hpBox.innerHTML = '<div class="sec">Their home &amp; space</div>'+
-          '<div class="pf-photos">'+ photos.map(function(u){
-            return '<img src="'+u+'" alt="" onclick="window.open(\''+u+'\',\'_blank\')">';
-          }).join('') +'</div>';
-      }).catch(function(){ hpBox.innerHTML=''; });
+    // "Home & walk area" = the sitter's OWN uploaded photos (they control them).
+    // Show up to two tiles; tapping opens a full-screen, swipeable gallery of ALL
+    // their photos. If they haven't uploaded any, the two default images show and
+    // still open on tap.
+    var hwArea = document.getElementById('homeWalkArea');
+    function tile(url, moreN){
+      return '<div class="hw-tile">' +
+        '<img src="' + url + '" alt="">' +
+        (moreN ? '<span class="hw-more">+' + moreN + '</span>' : '') +
+        '</div>';
     }
+    function wireHW(photos){
+      if (!hwArea) return;
+      var hasReal = photos && photos.length;
+      var gallery = hasReal ? photos : ['assets/img/photos/home.jpg', 'assets/img/photos/walk.jpg'];
+      if (hasReal){
+        var first = photos[0], second = photos[1] || photos[0];
+        var moreN = photos.length - 2;
+        hwArea.innerHTML = tile(first, 0) + tile(second, moreN > 0 ? moreN : 0);
+      }
+      Array.prototype.forEach.call(hwArea.querySelectorAll('img'), function(im, idx){
+        im.style.cursor = 'zoom-in';
+        im.addEventListener('click', function(){
+          UI.lightbox(gallery, Math.min(idx, gallery.length - 1));
+        });
+      });
+    }
+    if (hwArea && App.currentSitter && db.getHomePhotos){
+      db.getHomePhotos(App.currentSitter.id).then(function(p){ wireHW(p || []); }).catch(function(){ wireHW([]); });
+    } else { wireHW([]); }
 
     // real per-service prices
     var svcBox = document.getElementById('profileServices');
