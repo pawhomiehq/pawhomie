@@ -8,6 +8,11 @@
    - config.js has keys     -> live Supabase mode
    ===================================================================== */
 
+/* Sentinel prefix on a "call started" chat message. chat.js renders any message
+   beginning with this as a Join-call banner instead of a normal bubble. The
+   zero-width spaces keep it invisible if it ever shows as plain text. */
+window.CALL_MARKER = '​📹​';
+
 /* ------------------------- MOCK DATA (fallback) ------------------------ */
 window.MOCK = {
   session: null,   // null = not logged in (guest). set by mock signIn/signUp.

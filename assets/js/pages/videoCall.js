@@ -29,7 +29,14 @@ Pages.videoCall = {
     var callFrame = null;
     try {
       var room = await db.getVideoRoom(conv.id);
-      if (!room || !room.url) throw new Error('No room');
+      if (!room || !room.url){
+        // Demo mode (no Supabase/Daily keys) has no real room to join.
+        if (!window.sb){
+          status.innerHTML = '<div class="muted">Video calling is live once the app is connected to Supabase &amp; Daily. It’s all wired up — add the keys and it works.</div>';
+          return;
+        }
+        throw new Error('Could not reach the call room. Please try again.');
+      }
 
       status.style.display = 'none';
       callFrame = window.DailyIframe.createFrame(frameBox, {
@@ -48,6 +55,8 @@ Pages.videoCall = {
       });
 
       await callFrame.join({ url: room.url, token: room.token });
+      // The other person is rung server-side (in-chat banner + notification) by
+      // the video-room function when it first creates the room for this call.
     } catch(e){
       status.style.display = 'block';
       status.innerHTML = '<div class="authError" style="display:block">'+
@@ -58,7 +67,8 @@ Pages.videoCall = {
       if (callFrame){ try { callFrame.destroy(); } catch(_){} }
     }
 
-    // clean up if they navigate away
-    window.__vcCleanup = function(){ if (callFrame){ try{ callFrame.destroy(); }catch(e){} } window.__vcCleanup=null; };
+    // Release the camera/mic and tear down the frame when they navigate away.
+    // Router.render() calls window.__pageCleanup before rendering the next page.
+    window.__pageCleanup = function(){ if (callFrame){ try{ callFrame.destroy(); }catch(e){} callFrame=null; } };
   }
 };

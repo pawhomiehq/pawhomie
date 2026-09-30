@@ -76,11 +76,52 @@ Pages.chat = {
     }
 
     var seen = {};   // ids we've already drawn, so realtime can't double-post
+    var MARK = window.CALL_MARKER || '​📹​';
 
-    function draw(m) {
+    function isCall(m){ return typeof m.body === 'string' && m.body.indexOf(MARK) === 0; }
+
+    function draw(m, live) {
       if (seen[m.id]) return;
       seen[m.id] = true;
-      add(m.sender_id === me.id ? 'me' : 'them', m.body, false, m.image_url);
+      var mine = (m.sender_id === me.id);
+      if (isCall(m)){
+        var label = m.body.slice(MARK.length);
+        if (mine){
+          // my own "call started" line — a subtle system note
+          addSystem('📹 You started a video call');
+        } else {
+          addSystem('📹 ' + label);
+          // recent + from them + arriving now/last few min → offer to join
+          var ageMs = Date.now() - new Date(m.created_at || Date.now()).getTime();
+          if (ageMs < 5*60*1000) showJoinBanner();
+        }
+        return;
+      }
+      add(mine ? 'me' : 'them', m.body, false, m.image_url);
+    }
+
+    function addSystem(text){
+      var empty = thread.querySelector('.muted'); if (empty) empty.remove();
+      var d = document.createElement('div');
+      d.className = 'chat-sys';
+      d.textContent = text;
+      thread.appendChild(d);
+    }
+
+    function showJoinBanner(){
+      var existing = document.getElementById('callBanner');
+      if (existing){ existing.remove(); }
+      var who = (conv && conv.name ? conv.name.split(' ')[0] : 'Someone');
+      var bar = document.createElement('div');
+      bar.id = 'callBanner';
+      bar.className = 'call-banner';
+      bar.innerHTML = '<span class="call-dot"></span>' +
+        '<div style="flex:1"><b>'+who+' is calling</b><div style="font-size:12px;opacity:.85">Video call in progress</div></div>' +
+        '<button class="btn sm" id="joinCall" style="width:auto;padding:8px 16px">Join</button>';
+      // pin it just under the header, above the thread
+      thread.parentNode.insertBefore(bar, thread);
+      var j = document.getElementById('joinCall');
+      if (j) j.addEventListener('click', function(){ Router.go('videoCall'); });
     }
 
     var msgs = await db.getMessages(conv.id);

@@ -28,6 +28,14 @@ window.Router = {
       page = 'welcome';
     }
 
+    // Let the page we're leaving tear itself down (e.g. destroy the live video
+    // call frame so the camera & mic are released). Registered by pages that
+    // hold onto hardware or timers.
+    if (typeof window.__pageCleanup === 'function'){
+      try { window.__pageCleanup(); } catch(e){}
+      window.__pageCleanup = null;
+    }
+
     var view = document.getElementById('view');
     view.innerHTML = window.Pages[page].render();
     window.scrollTo(0,0);
