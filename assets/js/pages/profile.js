@@ -1,5 +1,5 @@
 Pages.profile = {
-  render(){ var s=App.currentSitter; var first=s.name.split(' ')[0];
+  render(){ var s=App.currentSitter; var first=UI.esc(s.name.split(' ')[0]);
     var guest = !!(window.Role && Role.isGuest());
     var q = Booking.quote(s.rate);
     return `
@@ -12,7 +12,7 @@ Pages.profile = {
       <div style="display:flex;gap:14px;align-items:center;margin-top:-34px;position:relative">
         ${UI.avatar(s.initial,{size:70,fs:24,gold:s.gold,border:true})}
         <div style="flex:1;padding-top:30px">
-          <div class="row-sb"><div style="font-size:20px;font-weight:900">${s.name}</div><div class="stars">\u2605 ${s.rating} <small class="muted">(${s.reviews})</small></div></div>
+          <div class="row-sb"><div style="font-size:20px;font-weight:900">${esc(s.name)}</div><div class="stars">\u2605 ${s.rating} <small class="muted">(${s.reviews})</small></div></div>
           <div class="verified" style="margin-top:2px">${UI.icon('check',14)} ID & background verified</div>
         </div>
       </div>
@@ -23,7 +23,7 @@ Pages.profile = {
             <div style="flex:1"><div style="font-weight:800;font-size:14px">Meet ${first} over video first</div><div class="muted" style="font-size:12px">Free 15-min intro call before you book</div></div>
             <span style="font-size:20px;color:var(--gold-dk)">\u203a</span></div>
           <div class="sec first">About</div>
-          <p style="font-size:14px;line-height:1.55;color:#40504D;font-weight:600">${s.about}</p>
+          <p style="font-size:14px;line-height:1.55;color:#40504D;font-weight:600">${esc(s.about)}</p>
           <div class="sec">Home & walk area</div>
           <div id="homeWalkArea" style="display:flex;gap:10px">${UI.photo('home','flex:1;height:100px;border-radius:14px;object-fit:cover')}${UI.photo('walk','flex:1;height:100px;border-radius:14px;object-fit:cover')}</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">${s.tags.map(function(t){return UI.tag(t);}).join('')}${UI.tag('Non-smoking')}</div>
@@ -133,10 +133,10 @@ Pages.profile = {
         rbox.innerHTML = reviews.map(function(r){
           return '<div class="card" style="padding:14px;margin-bottom:10px">'+
             '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'+UI.avatar(r.initial,{size:34,fs:13,gold:r.gold})+
-            '<div><div style="font-weight:800;font-size:14px">'+r.author+'</div>'+
+            '<div><div style="font-weight:800;font-size:14px">'+esc(r.author)+'</div>'+
             '<div style="color:var(--gold-dk);font-size:12px">'+'\u2605'.repeat(r.rating)+'</div></div></div>'+
-            (r.body?'<p style="font-size:13.5px;line-height:1.5;color:#40504D;font-weight:600">\u201C'+r.body+'\u201D</p>':'')+
-            (r.reply?'<div class="card" style="background:var(--tint);padding:10px 12px;margin-top:10px"><b style="font-size:12px;color:var(--teal-dk)">Response from the sitter</b><p style="font-size:13px;margin-top:4px;line-height:1.45">'+r.reply+'</p></div>':'')+
+            (r.body?'<p style="font-size:13.5px;line-height:1.5;color:#40504D;font-weight:600">\u201C'+esc(r.body)+'\u201D</p>':'')+
+            (r.reply?'<div class="card" style="background:var(--tint);padding:10px 12px;margin-top:10px"><b style="font-size:12px;color:var(--teal-dk)">Response from the sitter</b><p style="font-size:13px;margin-top:4px;line-height:1.45">'+esc(r.reply)+'</p></div>':'')+
             (window.Role && !Role.isGuest() ? '<div style="text-align:right;margin-top:8px"><a class="report-review" data-rid="'+r.id+'" style="font-size:11.5px;color:var(--muted);cursor:pointer">Report</a></div>' : '')+
             '</div>';
         }).join('');

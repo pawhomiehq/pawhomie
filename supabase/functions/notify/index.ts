@@ -77,20 +77,53 @@ function template(kind: string, data: Record<string, string>) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
-    const { kind, userId, toEmail, name, dates } = await req.json();
+    const { kind, userId, name, dates } = await req.json();
     const resendKey = Deno.env.get("RESEND_API_KEY");
     if (!resendKey) throw new Error("RESEND_API_KEY not set");
+    if (!userId) throw new Error("No recipient");
 
-    // resolve recipient email
-    let email = toEmail as string | undefined;
-    if (!email && userId) {
-      const supabase = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SERVICE_ROLE_KEY") ?? "",
-      );
-      const { data } = await supabase.auth.admin.getUserById(userId);
-      email = data?.user?.email ?? undefined;
+    const url = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SERVICE_ROLE_KEY") || "";
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+    if (!url || !serviceKey || !anonKey) throw new Error("Server not configured.");
+
+    // The caller must be signed in. We never accept a raw recipient address from
+    // the body (that would be an open email relay); we only email a user who
+    // actually shares a booking or conversation with the caller.
+    const asUser = createClient(url, anonKey, { global: { headers: { Authorization: req.headers.get("Authorization") || "" } } });
+    const { data: ures } = await asUser.auth.getUser();
+    const caller = ures?.user;
+    if (!caller) throw new Error("Please sign in.");
+
+    const supabase = createClient(url, serviceKey);
+
+    // Is userId a real counterparty of the caller? (owner<->sitter on a booking,
+    // or the two people on a conversation)
+    const sitterIdsA = (await supabase.from("sitter_profiles").select("id").eq("profile_id", caller.id)).data?.map((r: any) => r.id) || [];
+    const sitterIdsB = (await supabase.from("sitter_profiles").select("id").eq("profile_id", userId)).data?.map((r: any) => r.id) || [];
+    let related = false;
+    // caller is owner, recipient is the booking's sitter
+    if (sitterIdsB.length) {
+      const q = await supabase.from("bookings").select("id", { count: "exact", head: true })
+        .eq("owner_id", caller.id).in("sitter_id", sitterIdsB);
+      if ((q.count || 0) > 0) related = true;
     }
+    // caller is sitter, recipient is the owner
+    if (!related && sitterIdsA.length) {
+      const q = await supabase.from("bookings").select("id", { count: "exact", head: true })
+        .eq("owner_id", userId).in("sitter_id", sitterIdsA);
+      if ((q.count || 0) > 0) related = true;
+    }
+    // share a conversation
+    if (!related) {
+      const q = await supabase.from("conversations").select("id", { count: "exact", head: true })
+        .or(`and(owner_id.eq.${caller.id},sitter_id.eq.${userId}),and(owner_id.eq.${userId},sitter_id.eq.${caller.id})`);
+      if ((q.count || 0) > 0) related = true;
+    }
+    if (!related) throw new Error("Not allowed.");
+
+    const { data } = await supabase.auth.admin.getUserById(userId);
+    const email = data?.user?.email ?? undefined;
     if (!email) throw new Error("No recipient email");
 
     const { subject, html } = template(kind, { name: name || "", dates: dates || "" });

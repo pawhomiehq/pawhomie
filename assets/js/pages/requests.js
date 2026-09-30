@@ -26,12 +26,12 @@ Pages.requests = {
         <div style="display:flex;gap:13px;align-items:center">
           ${UI.avatar(r.initial,{size:48,fs:17,gold:r.gold})}
           <div style="flex:1">
-            <div style="font-weight:800">${r.name}${r.pet?' \u00b7 '+r.pet:''}</div>
+            <div style="font-weight:800">${esc(r.name)}${r.pet?' \u00b7 '+esc(r.pet):''}</div>
             <div class="muted" style="font-size:12.5px">${window.serviceLabel(r.kind)} \u00b7 ${r.dates} \u00b7 ${r.price}</div>
             <div style="display:flex;gap:6px;margin-top:8px">${UI.tag('New')}${UI.tag('Verified owner','ok')}</div>
           </div>
         </div>
-        ${r.note ? `<p class="muted" style="font-size:13px;margin:10px 0 0;line-height:1.5">\u201c${r.note}\u201d</p>` : ''}
+        ${r.note ? `<p class="muted" style="font-size:13px;margin:10px 0 0;line-height:1.5">\u201c${esc(r.note)}\u201d</p>` : ''}
         <div style="display:flex;gap:10px;margin-top:12px">
           <button class="btn ghost sm" style="flex:1" data-decline>Decline</button>
           <button class="btn sm" style="flex:1" data-accept>Accept</button>

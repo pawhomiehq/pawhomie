@@ -336,7 +336,7 @@ input[type="date"]{font-family:inherit}
 .brand{display:flex;align-items:center}
 
 /* ---------- services showcase (welcome "How") ---------- */
-.svc-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.svc-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:30px}
 @media(min-width:640px){ .svc-strip{grid-template-columns:repeat(3,1fr)} }
 .svc-card{background:var(--paper);border:1.5px solid var(--line);border-radius:16px;padding:14px;cursor:pointer;
   transition:transform .18s var(--ease),border-color .18s var(--ease),box-shadow .18s}
@@ -420,7 +420,8 @@ input[type="date"]{font-family:inherit}
 .quote .who{display:flex;align-items:center;gap:10px}
 .quote .who b{font-size:13.5px;display:block}
 .quote .who span{font-size:12px;color:var(--muted);font-weight:600}
-@media(min-width:900px){ .quote-stack .quote:nth-child(2){margin-left:26px} }
+/* all three cards share the same left edge (no stagger) */
+.quote-stack .quote{margin-left:0}
 
 /* ---- become a paw homie ---- */
 .sitter-band{background:linear-gradient(160deg,#14514C,#21706F)}
@@ -795,11 +796,16 @@ input[type="date"]{max-width:100%;box-sizing:border-box}
 .hw-more{position:absolute;inset:0;display:grid;place-items:center;border-radius:14px;
   background:rgba(13,43,40,.55);color:#fff;font-weight:800;font-size:18px;cursor:zoom-in}
 
-/* "Keep more than the competition" sitter comparison card (Bilal spec colors) */
-.keepmore{max-width:640px;margin:0 auto}
-.km-pill{display:block;width:max-content;margin:0 auto 16px;background:#F2E8CF;color:#5b4a1e;font-weight:800;
+/* gap between the "Get paid" intro and the comparison block, so they read as
+   two clear steps instead of colliding */
+.keepmore-wrap{margin-top:64px}
+@media(max-width:600px){ .keepmore-wrap{margin-top:44px} }
+.keepmore{max-width:760px;margin:0 auto}
+.keepmore h2{text-wrap:balance}
+.km-pill{display:block;width:max-content;margin:0 auto 20px;background:#F2E8CF;color:#5b4a1e;font-weight:800;
   font-size:13px;letter-spacing:.08em;padding:8px 20px;border-radius:99px}
-.km-card{background:#fff;border-radius:24px;padding:28px 22px;box-shadow:0 20px 50px rgba(0,0,0,.18)}
+.km-card{background:#fff;border-radius:24px;padding:36px 34px;box-shadow:0 20px 50px rgba(0,0,0,.18)}
+@media(max-width:600px){ .km-card{padding:26px 20px} }
 .km-cols{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
 .km-col{flex:1;text-align:center;min-width:0;display:flex;flex-direction:column;align-items:center}
 /* keep the two columns lined up row-for-row: fixed heights on the shared rows
@@ -820,8 +826,11 @@ input[type="date"]{max-width:100%;box-sizing:border-box}
   font-weight:900;font-size:14px;display:grid;place-items:center;border:2px solid #d6f3e5;
   margin-top:58px}   /* line the VS up with the price row (label + badge above it) */
 .km-break{border-top:1px solid var(--line);margin-top:20px;padding-top:14px;text-align:center;font-size:12.5px;color:#6E7B78}
-.km-year{max-width:max-content;margin:16px auto 0;background:var(--gold);color:#4A360A;font-weight:800;
-  font-size:14.5px;padding:12px 22px;border-radius:99px;text-align:center}
+/* the $483 figure is a STAT, not a button — soft outlined highlight so it reads
+   differently from the solid-gold "Apply" button */
+.km-year{max-width:max-content;margin:22px auto 0;background:rgba(233,184,88,.14);
+  border:1.5px solid rgba(233,184,88,.55);color:#F0D28A;font-weight:800;
+  font-size:15px;padding:13px 24px;border-radius:14px;text-align:center;line-height:1.4}
 @media(max-width:460px){ .km-amt{font-size:30px} .km-vs{width:38px;height:38px;font-size:12px;margin-top:56px} }
 @media(max-width:360px){
   .km-card{padding:22px 16px}

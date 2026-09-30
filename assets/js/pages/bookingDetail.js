@@ -52,7 +52,7 @@ function wireEmpty(host){
 }
 
 function renderBooking(host, b){
-  var first = (b.sitterName || 'your Paw Homie').split(' ')[0];
+  var first = UI.esc((b.sitterName || 'your Paw Homie').split(' ')[0]);
   var nights = Math.max(1, Math.round((new Date(b.endDate) - new Date(b.startDate)) / 86400000));
   var money = Booking.money;
 
@@ -108,15 +108,15 @@ function renderBooking(host, b){
     <div class="card anim" style="padding:16px;display:flex;gap:13px;align-items:center">
       ${UI.avatar(b.initial,{size:52,fs:19,gold:b.gold})}
       <div style="flex:1">
-        <div style="font-weight:800;font-size:15.5px">${b.sitterName}</div>
-        <div class="muted" style="font-size:12.5px">${b.petName} \u00b7 ${fmtRange(b.startDate,b.endDate)} \u00b7 ${nights} night${nights>1?'s':''}</div>
+        <div style="font-weight:800;font-size:15.5px">${esc(b.sitterName)}</div>
+        <div class="muted" style="font-size:12.5px">${esc(b.petName)} \u00b7 ${fmtRange(b.startDate,b.endDate)} \u00b7 ${nights} night${nights>1?'s':''}</div>
       </div>
       ${UI.tag(STATUS_LABEL[b.status]||b.status, tone)}
     </div>
 
     ${b.note ? `<div class="card anim d1" style="padding:14px 16px;margin-top:12px">
       <div class="label" style="margin:0 0 6px">Your note</div>
-      <div style="font-size:14px;font-weight:600;color:#40504D;line-height:1.5">${b.note}</div></div>` : ''}
+      <div style="font-size:14px;font-weight:600;color:#40504D;line-height:1.5">${esc(b.note)}</div></div>` : ''}
 
     <div class="sec">Timeline</div>
     <div class="card anim d1" style="padding:6px 16px">${timeline}</div>

@@ -42,12 +42,12 @@ async function draw(){
         <div style="display:flex;gap:12px;align-items:center">
           ${p.photo_url ? '<div class="pet-thumb"><img src="'+p.photo_url+'" alt=""></div>' : UI.avatar(p.name.charAt(0).toUpperCase(),{size:48,fs:18})}
           <div style="flex:1;min-width:0">
-            <div style="font-weight:800;font-size:16px">${p.name}</div>
+            <div style="font-weight:800;font-size:16px">${esc(p.name)}</div>
             <div class="muted" style="font-size:12.5px">${sub}</div>
           </div>
           <button class="btn ghost sm" data-edit="${p.id}">Edit</button>
         </div>
-        ${p.notes ? `<p class="muted" style="font-size:13px;margin-top:10px;line-height:1.5">${p.notes}</p>` : ''}
+        ${p.notes ? `<p class="muted" style="font-size:13px;margin-top:10px;line-height:1.5">${esc(p.notes)}</p>` : ''}
         ${flags.length ? `<div class="tags" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">${flags.map(function(t){return UI.tag(t);}).join('')}</div>` : ''}
       </div>`;
     }).join('') + `<button class="btn ghost" id="addPet" style="margin-top:4px">+ Add another pet</button>`;
@@ -81,7 +81,7 @@ function drawForm(host){
         <input type="file" accept="image/*" id="petPhotoInput" style="display:none">
       </div>
       <div class="label">Name</div>
-      <input class="field" id="pName" value="${p.name || ''}" placeholder="Milo">
+      <input class="field" id="pName" value="${esc(p.name || '')}" placeholder="Milo">
       <div style="display:flex;gap:12px;margin-top:14px">
         <div style="flex:1"><div class="label">Type</div>
           <select class="field" id="pSpecies">
@@ -94,7 +94,7 @@ function drawForm(host){
       <div class="label" style="margin-top:14px">Age (years)</div>
       <input class="field" id="pAge" type="number" min="0" max="30" value="${p.age_years != null ? p.age_years : ''}" placeholder="4">
       <div class="label" style="margin-top:14px">Notes for Paw Homies</div>
-      <textarea class="field" id="pNotes" rows="3" placeholder="Loves morning walks. A little shy at first, then very cuddly.">${p.notes || ''}</textarea>
+      <textarea class="field" id="pNotes" rows="3" placeholder="Loves morning walks. A little shy at first, then very cuddly.">${esc(p.notes || '')}</textarea>
     </div>
 
     <div class="sec">Care details</div>
@@ -106,7 +106,7 @@ function drawForm(host){
 
     ${isEdit ? `
     <div class="sec">Vaccination record</div>
-    <p class="muted anim d1" style="font-size:12.5px;margin-bottom:10px">Upload proof of vaccination so sitters know ${p.name||'your pet'} is protected. Sitters see that it\u2019s on file \u2014 not the document itself.</p>
+    <p class="muted anim d1" style="font-size:12.5px;margin-bottom:10px">Upload proof of vaccination so sitters know ${esc(p.name||'your pet')} is protected. Sitters see that it\u2019s on file \u2014 not the document itself.</p>
     <div class="card anim d1 doc-row" style="border:1px dashed var(--line);border-radius:14px">
       <div class="doc-thumb" id="vaxThumb">${p.vaccination_status==='on_file'?UI.icon('check',20):UI.icon('image',20)}</div>
       <div style="flex:1;min-width:0"><b style="font-size:14px">Vaccination proof</b>

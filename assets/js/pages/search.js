@@ -69,8 +69,8 @@ Pages.search = {
         <div class="card scard anim" data-sitter="${s.id}" style="animation-delay:${i*0.05}s">
           ${UI.avatar(s.initial,{size:60,fs:22,gold:s.gold})}
           <div class="info">
-            <div class="row-sb"><div class="name">${s.name}</div><div class="rate"><small>from</small> $${s.rate} <small>/night</small></div></div>
-            <div class="meta"><span class="verified">\u2713 Verified</span> \u00b7 \u2605 ${s.rating} (${s.reviews})${s.city?' \u00b7 '+s.city:''}</div>
+            <div class="row-sb"><div class="name">${esc(s.name)}</div><div class="rate"><small>from</small> $${s.rate} <small>/night</small></div></div>
+            <div class="meta"><span class="verified">\u2713 Verified</span> \u00b7 \u2605 ${s.rating} (${s.reviews})${s.city?' \u00b7 '+esc(s.city):''}</div>
             <div class="tags">${s.tags.map(function(t){return UI.tag(t);}).join('')}</div>
           </div>
           <div class="heart ${favIds.indexOf(s.id)>-1?'on':''}" data-heart data-fav="${s.id}"><svg viewBox="0 0 24 24"><path d="M12 21C5 15.5 3 12 3 8.5 3 5.5 5.5 4 8 5.2 9 5.7 12 8 12 8s3-2.3 4-2.8C18.5 4 21 5.5 21 8.5 21 12 19 15.5 12 21z"/></svg></div>

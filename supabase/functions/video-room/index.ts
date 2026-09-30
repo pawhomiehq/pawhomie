@@ -52,11 +52,10 @@ Deno.serve(async (req) => {
     // deno-lint-ignore no-explicit-any
     let admin: any = null;
 
-    // Only enforce if we have what we need to check (url + service key). If the
-    // project hasn't set the service key yet, we skip the check rather than
-    // hard-fail, so calling still works — but with the key set (recommended),
-    // non-participants are turned away and the other person gets rung.
-    if (url && serviceKey && anonKey) {
+    // Fail closed: without the keys we can't verify the caller, so we refuse
+    // rather than mint a token for an unverified request.
+    if (!url || !serviceKey || !anonKey) return fail("Server not configured.", 500);
+    {
       // who is calling? (from their JWT)
       const asUser = createClient(url, anonKey, { global: { headers: { Authorization: authHeader } } });
       const { data: ures } = await asUser.auth.getUser();

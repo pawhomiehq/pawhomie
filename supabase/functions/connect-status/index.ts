@@ -27,16 +27,25 @@ Deno.serve(async (req) => {
     const { sitterProfileId } = await req.json();
     if (!sitterProfileId) throw new Error("Missing sitterProfileId");
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SERVICE_ROLE_KEY") ?? "",
-    );
+    const url = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SERVICE_ROLE_KEY") || "";
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+    if (!url || !serviceKey || !anonKey) throw new Error("Server not configured.");
+
+    // caller must be signed in and own this sitter profile
+    const asUser = createClient(url, anonKey, { global: { headers: { Authorization: req.headers.get("Authorization") || "" } } });
+    const { data: ures } = await asUser.auth.getUser();
+    const user = ures?.user;
+    if (!user) throw new Error("Please sign in.");
+
+    const supabase = createClient(url, serviceKey);
 
     const { data: sp } = await supabase
       .from("sitter_profiles")
-      .select("stripe_account_id")
+      .select("stripe_account_id, profile_id")
       .eq("id", sitterProfileId)
       .single();
+    if (!sp || sp.profile_id !== user.id) throw new Error("Not allowed.");
 
     const accountId = sp?.stripe_account_id as string | null;
     if (!accountId) {

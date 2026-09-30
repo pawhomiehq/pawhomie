@@ -16,13 +16,13 @@ Pages.sitterReviews = {
       return `<div class="card anim srcard" data-id="${r.id}" style="padding:16px;margin-bottom:12px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
           ${UI.avatar(r.initial,{size:36,fs:14,gold:r.gold})}
-          <div><div style="font-weight:800;font-size:14px">${r.author}</div>
+          <div><div style="font-weight:800;font-size:14px">${esc(r.author)}</div>
             <div style="color:var(--gold-dk);font-size:12px">${'\u2605'.repeat(r.rating)}</div></div>
         </div>
-        ${r.body?`<p style="font-size:13.5px;line-height:1.5;color:#40504D;font-weight:600">\u201C${r.body}\u201D</p>`:''}
+        ${r.body?`<p style="font-size:13.5px;line-height:1.5;color:#40504D;font-weight:600">\u201C${esc(r.body)}\u201D</p>`:''}
         <div class="reply-area" style="margin-top:10px">
           ${r.reply
-            ? `<div class="card" style="background:var(--tint);padding:10px 12px"><b style="font-size:12px;color:var(--teal-dk)">Your reply</b><p style="font-size:13px;margin-top:4px;line-height:1.45">${r.reply}</p></div>`
+            ? `<div class="card" style="background:var(--tint);padding:10px 12px"><b style="font-size:12px;color:var(--teal-dk)">Your reply</b><p style="font-size:13px;margin-top:4px;line-height:1.45">${esc(r.reply)}</p></div>`
             : `<button class="btn ghost sm" style="width:auto;padding:7px 14px" data-reply>Reply</button>`}
         </div>
       </div>`;

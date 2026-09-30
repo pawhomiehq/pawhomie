@@ -115,8 +115,18 @@ function avatar(initial, opts){ opts=opts||{}; var sz=opts.size||44; var fs=opts
   return '<div class="av'+(opts.gold?' gold':'')+'" style="width:'+sz+'px;height:'+sz+'px;font-size:'+fs+'px;'+b+'">'+initial+'</div>'; }
 function tag(t, cls){ return '<span class="tag'+(cls?' '+cls:'')+'">'+t+'</span>'; }
 function backBtn(to){ return '<div class="back" data-go="'+to+'">\u2039</div>'; }
+/* Escape user-controlled text before putting it into innerHTML/template strings.
+   Prevents stored XSS (a name, review, note, etc. containing <script> or an
+   onerror attribute). Use UI.esc(...) / window.esc(...) around any user value. */
+function esc(s){
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, function(c){
+    return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+  });
+}
+
 function appbar(title, sub, back){
-  return '<div class="appbar">'+(back?backBtn(back):'')+'<div><h1>'+title+'</h1>'+(sub?'<div class="sub">'+sub+'</div>':'')+'</div></div>'; }
+  return '<div class="appbar">'+(back?backBtn(back):'')+'<div><h1>'+esc(title)+'</h1>'+(sub?'<div class="sub">'+esc(sub)+'</div>':'')+'</div></div>'; }
 
 /* mobile tab bar + desktop top nav (built once, updated per route) */
 const TABS = [['dashboard','Home','home'],['search','Search','search'],['messages','Messages','msg'],['settings','Account','user']];
@@ -254,4 +264,5 @@ function readAddress(prefix){
 }
 
 window.UI = {
-  skeleton:function(n){ n=n||3; var o=''; for(var i=0;i<n;i++) o+='<div class="card skel skel-card"></div>'; return o; }, icon, photo, avatar, tag, appbar, backBtn, renderNav, NO_TAB, toast, addressFields, readAddress, lightbox };
+  skeleton:function(n){ n=n||3; var o=''; for(var i=0;i<n;i++) o+='<div class="card skel skel-card"></div>'; return o; }, icon, photo, avatar, tag, appbar, backBtn, renderNav, NO_TAB, toast, addressFields, readAddress, lightbox, esc };
+window.esc = esc;

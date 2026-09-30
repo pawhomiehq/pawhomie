@@ -149,15 +149,15 @@ async function fillApps(){
     return `<div class="card anim appcard" data-id="${a.id}" style="padding:16px;margin-bottom:12px">
       <div style="display:flex;gap:12px;align-items:center">
         ${UI.avatar(a.initial,{size:46,fs:17,gold:a.gold})}
-        <div style="flex:1;min-width:0"><div style="font-weight:800">${a.name}</div>
-          <div class="muted" style="font-size:12.5px">${a.city||'\u2014'} \u00b7 $${a.rate}/night</div></div>
+        <div style="flex:1;min-width:0"><div style="font-weight:800">${esc(a.name)}</div>
+          <div class="muted" style="font-size:12.5px">${esc(a.city||'\u2014')} \u00b7 $${a.rate}/night</div></div>
         <div class="quiz-chip" style="background:${col}1a;color:${col}">${a.score!=null?a.score+'%':'\u2014'}</div>
       </div>
-      ${a.about?`<p class="muted" style="font-size:13px;margin:12px 0 0;line-height:1.5">\u201c${a.about}\u201d</p>`:''}
+      ${a.about?`<p class="muted" style="font-size:13px;margin:12px 0 0;line-height:1.5">\u201c${esc(a.about)}\u201d</p>`:''}
       ${(a.phone||a.address||a.home_type)?`<div class="muted" style="font-size:12.5px;margin-top:10px;line-height:1.6">
-        ${a.home_type?'\uD83C\uDFE0 '+a.home_type+(a.has_yard?' \u00b7 has yard':''):''}
-        ${a.phone?'<br>\uD83D\uDCDE '+a.phone:''}
-        ${a.address?'<br>\uD83D\uDCCD '+a.address:''}
+        ${a.home_type?'\uD83C\uDFE0 '+esc(a.home_type)+(a.has_yard?' \u00b7 has yard':''):''}
+        ${a.phone?'<br>\uD83D\uDCDE '+esc(a.phone):''}
+        ${a.address?'<br>\uD83D\uDCCD '+esc(a.address):''}
       </div>`:''}
       ${(a.documents && Object.keys(a.documents).length)?`
         <div class="doc-strip" data-docs="${a.id}" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
@@ -201,8 +201,8 @@ async function drawSitters(body){
     var live = s.status==='approved' && s.published;
     return `<div class="card anim" data-id="${s.id}" style="padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:center">
       ${UI.avatar(s.initial,{size:44,fs:16,gold:s.gold})}
-      <div style="flex:1;min-width:0"><div style="font-weight:800;font-size:14.5px">${s.name}</div>
-        <div class="muted" style="font-size:12px">${s.city||'\u2014'} \u00b7 $${s.rate}/night \u00b7 quiz ${s.score!=null?s.score+'%':'\u2014'}</div></div>
+      <div style="flex:1;min-width:0"><div style="font-weight:800;font-size:14.5px">${esc(s.name)}</div>
+        <div class="muted" style="font-size:12px">${esc(s.city||'\u2014')} \u00b7 $${s.rate}/night \u00b7 quiz ${s.score!=null?s.score+'%':'\u2014'}</div></div>
       ${UI.tag(live?'Live':(s.status==='approved'?'Unpublished':s.status), live?'ok':(s.status==='rejected'?'':'gold'))}
       <button class="btn ghost sm" style="width:auto;padding:8px 12px" data-suspend>${live?'Suspend':'Approve'}</button>
     </div>`;
@@ -228,7 +228,7 @@ async function drawBookingsAdmin(body){
   body.innerHTML = bk.map(function(b){
     return `<div class="card anim" style="padding:13px 14px;margin-bottom:9px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-        <div style="min-width:0"><div style="font-weight:800;font-size:14px">${b.owner} \u2192 ${b.sitter}</div>
+        <div style="min-width:0"><div style="font-weight:800;font-size:14px">${esc(b.owner)} \u2192 ${esc(b.sitter)}</div>
           <div class="muted" style="font-size:12px">${b.dates} \u00b7 ${Booking.money(b.total)}</div></div>
         ${UI.tag(LABEL[b.status]||b.status, b.status==='completed'||b.status==='accepted'?'ok':(b.status==='pending'?'gold':''))}
       </div>
@@ -252,8 +252,8 @@ async function drawOwnersAdmin(body){
     return `<div class="card anim ownercard" data-id="${o.id}" style="padding:16px;margin-bottom:12px">
       <div style="display:flex;gap:12px;align-items:center">
         ${UI.avatar(o.initial,{size:46,fs:17,gold:o.gold})}
-        <div style="flex:1;min-width:0"><div style="font-weight:800">${o.name}</div>
-          <div class="muted" style="font-size:12.5px">${o.city||'\u2014'}</div></div>
+        <div style="flex:1;min-width:0"><div style="font-weight:800">${esc(o.name)}</div>
+          <div class="muted" style="font-size:12.5px">${esc(o.city||'\u2014')}</div></div>
         <div class="quiz-chip" style="background:${col}1a;color:${col};text-transform:capitalize">${o.status}</div>
       </div>
       ${o.document?`<div class="doc-strip" style="margin-top:12px"><div class="doc-mini" data-ownerdoc="${o.document}"><span>ID</span></div></div>`:'<div class="muted" style="font-size:12px;margin-top:10px">No document</div>'}
@@ -299,10 +299,10 @@ async function drawReviewsAdmin(body){
   body.innerHTML = rv.map(function(r){
     return `<div class="card anim revcard" data-id="${r.id}" style="padding:14px;margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <div style="font-weight:800;font-size:13.5px">${r.author} \u2192 ${r.sitter}</div>
+        <div style="font-weight:800;font-size:13.5px">${esc(r.author)} \u2192 ${esc(r.sitter)}</div>
         <div style="color:var(--gold-dk);font-size:13px">${'\u2605'.repeat(r.rating)}</div>
       </div>
-      ${r.body?`<p style="font-size:13.5px;margin:8px 0 0;line-height:1.5">${r.body}</p>`:''}
+      ${r.body?`<p style="font-size:13.5px;margin:8px 0 0;line-height:1.5">${esc(r.body)}</p>`:''}
       <button class="btn ghost sm" style="width:auto;padding:7px 12px;margin-top:10px;color:var(--danger)" data-remove>Remove review</button>
     </div>`;
   }).join('');
@@ -332,11 +332,11 @@ async function drawReportsAdmin(body){
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
         <div style="min-width:0">
           <div style="font-weight:800;font-size:14px;text-transform:capitalize">${r.kind} reported</div>
-          <div class="muted" style="font-size:12px">by ${r.reporter}</div>
+          <div class="muted" style="font-size:12px">by ${esc(r.reporter)}</div>
         </div>
         ${UI.tag('Open','gold')}
       </div>
-      ${r.reason?`<p class="muted" style="font-size:13px;margin:10px 0 0;line-height:1.5">\u201c${r.reason}\u201d</p>`:''}
+      ${r.reason?`<p class="muted" style="font-size:13px;margin:10px 0 0;line-height:1.5">\u201c${esc(r.reason)}\u201d</p>`:''}
       <button class="btn ghost sm" style="width:auto;padding:7px 14px;margin-top:12px" data-resolve>Mark reviewed</button>
     </div>`;
   }).join('');

@@ -25,8 +25,8 @@ Pages.messages = {
       return `<div class="card conv anim" data-conv="${c.id}" style="margin-bottom:12px;cursor:pointer">
         ${UI.avatar(c.initial,{size:46,fs:16,gold:c.gold})}
         <div style="flex:1;min-width:0">
-          <div class="row-sb"><b>${c.name}</b><span class="muted" style="font-size:11px">${c.time}</span></div>
-          <div class="muted ell" style="font-size:13px;margin-top:2px">${c.last}</div>
+          <div class="row-sb"><b>${esc(c.name)}</b><span class="muted" style="font-size:11px">${c.time}</span></div>
+          <div class="muted ell" style="font-size:13px;margin-top:2px">${esc(c.last)}</div>
         </div>
       </div>`;
     }).join('');

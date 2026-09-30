@@ -71,10 +71,10 @@ Pages.dashboard = { render(){ return `
       return `<div class="card big-book" data-booking="${b.id}" style="margin-bottom:10px;cursor:pointer">
         ${UI.avatar(b.initial,{size:52,fs:19,gold:b.gold})}
         <div style="flex:1">
-          <div style="font-weight:800;font-size:15.5px">${b.sitterName} · House sitting</div>
-          <div class="muted" style="font-size:12.5px;margin-top:2px">${b.petName} · ${b.dates} · ${Booking.money(b.total)}</div>
+          <div style="font-weight:800;font-size:15.5px">${esc(b.sitterName)} · House sitting</div>
+          <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(b.petName)} · ${b.dates} · ${Booking.money(b.total)}</div>
           <span class="${TONE[b.status]||'tag'}" style="margin-top:8px">${LABEL[b.status]||b.status}</span>
-          ${isPending ? '<div class="muted" style="font-size:11.5px;margin-top:6px">\u23f3 Request sent — waiting for '+(b.sitterName.split(' ')[0])+' to accept</div>' : ''}
+          ${isPending ? '<div class="muted" style="font-size:11.5px;margin-top:6px">\u23f3 Request sent — waiting for '+esc(b.sitterName.split(' ')[0])+' to accept</div>' : ''}
         </div>
       </div>`;
     }).join('');
@@ -96,10 +96,10 @@ Pages.dashboard = { render(){ return `
             '<div class="muted" style="font-size:13.5px">No pets added yet</div>'+UI.tag('Add a pet','gold')+'</div>';
         } else {
           petsBox.innerHTML = pets.map(function(p){
-            var meta = [p.species, p.breed, (p.age_years!=null?p.age_years+' yrs':'')].filter(Boolean).join(' \u00b7 ');
+            var meta = esc([p.species, p.breed, (p.age_years!=null?p.age_years+' yrs':'')].filter(Boolean).join(' \u00b7 '));
             return '<div class="card row-sb" style="padding:14px 16px;cursor:pointer;margin-bottom:8px" data-pet="'+p.id+'">'+
               '<div style="display:flex;gap:12px;align-items:center">'+UI.avatar((p.name||'?').charAt(0).toUpperCase(),{size:44,fs:16})+
-              '<div><div style="font-weight:800">'+(p.name||'Pet')+'</div><div class="muted" style="font-size:12.5px">'+meta+'</div></div></div>'+UI.tag('Edit')+'</div>';
+              '<div><div style="font-weight:800">'+esc(p.name||'Pet')+'</div><div class="muted" style="font-size:12.5px">'+meta+'</div></div></div>'+UI.tag('Edit')+'</div>';
           }).join('');
           petsBox.querySelectorAll('[data-pet]').forEach(function(el){
             el.addEventListener('click', function(){ App.currentPetId = el.getAttribute('data-pet'); Router.go('petProfile'); });

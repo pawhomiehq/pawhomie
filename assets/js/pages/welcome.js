@@ -180,7 +180,6 @@ Pages.welcome = {
         <div class="eyebrow gold">Become a Paw Homie</div>
         <h2>Get paid to hang out with pets</h2>
         <p class="lede">Set your own rates, pick the exact dates you\u2019re free, and choose which pets you take. You keep 85\u201390% of every booking.</p>
-        <button class="btn gold wauto" data-go="signup">Apply to be a Paw Homie</button>
       </div>
       <div class="reveal">
         <div class="earn card">
@@ -197,7 +196,7 @@ Pages.welcome = {
     </div>
 
     <!-- Keep more than the competition (sitter-focused comparison) -->
-    <div class="band-in" style="margin-top:8px">
+    <div class="band-in keepmore-wrap">
       <div class="reveal keepmore">
         <h2 style="text-align:center;color:#fff;margin-bottom:6px">Keep more than the competition</h2>
         <div class="km-pill">FOR SITTERS</div>

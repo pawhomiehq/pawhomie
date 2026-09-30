@@ -27,18 +27,28 @@ Deno.serve(async (req) => {
     const { sitterProfileId, email, returnUrl } = await req.json();
     if (!sitterProfileId) throw new Error("Missing sitterProfileId");
 
-    // service-role client so we can read/write the sitter's stripe id
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SERVICE_ROLE_KEY") ?? "",
-    );
+    const url = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SERVICE_ROLE_KEY") || "";
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+    if (!url || !serviceKey || !anonKey) throw new Error("Server not configured.");
 
-    // find any existing connected account for this sitter
+    // The caller must be signed in and own this sitter profile — otherwise an
+    // attacker could attach their own bank details to someone else's payouts.
+    const asUser = createClient(url, anonKey, { global: { headers: { Authorization: req.headers.get("Authorization") || "" } } });
+    const { data: ures } = await asUser.auth.getUser();
+    const user = ures?.user;
+    if (!user) throw new Error("Please sign in.");
+
+    // service-role client so we can read/write the sitter's stripe id
+    const supabase = createClient(url, serviceKey);
+
+    // find any existing connected account for this sitter (and verify ownership)
     const { data: sp } = await supabase
       .from("sitter_profiles")
-      .select("stripe_account_id")
+      .select("stripe_account_id, profile_id")
       .eq("id", sitterProfileId)
       .single();
+    if (!sp || sp.profile_id !== user.id) throw new Error("You can't set up payouts for this profile.");
 
     let accountId = sp?.stripe_account_id as string | null;
 

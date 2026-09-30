@@ -1560,9 +1560,10 @@ window.db = {
 
   async createPaymentHold(amount, bookingId, description, sitterProfileId, subtotal, sitterRate) {
     if (!LIVE()) return { clientSecret:'mock', id:'pi_mock' };
+    // The server recomputes the amount + split from the booking in the database;
+    // it only needs the booking id (extra args kept for call-site compatibility).
     var res = await sb.functions.invoke('create-payment', {
-      body: { amount: amount, subtotal: subtotal, sitterRate: sitterRate, currency: 'cad',
-              bookingId: bookingId, description: description, sitterProfileId: sitterProfileId }
+      body: { bookingId: bookingId, currency: 'cad', description: description }
     });
     if (res.error) throw new Error(res.error.message || 'Payment setup failed');
     if (res.data && res.data.error) throw new Error(res.data.error);
