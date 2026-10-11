@@ -184,6 +184,11 @@ function renderNav(active){
              '<a data-go="settings" class="nav-hide-mobile '+(active==='settings'?'on':'')+'">Account</a>';
   }
 
+  // Notifications bell — visible on mobile AND desktop for signed-in consumers.
+  if (!R.isGuest() && !R.isAdmin()){
+    links += '<a data-go="notifications" class="nav-bell'+(active==='notifications'?' on':'')+'" aria-label="Notifications">'+icon('bell',20)+'</a>';
+  }
+
   var tn = document.getElementById('topnav');
   var brand = R.isAdmin()
     ? '<div class="brand brand-static"><img src="assets/img/logo-header.png" alt="PawHomie" class="brand-logo"></div>'
@@ -214,6 +219,7 @@ function applyNavBadges(a){
       else if (b){ b.remove(); }
     });
   }
+  dot('notifications', a.unreadNotifications > 0);
   dot('messages', a.unreadMessages > 0);
   dot('requests', a.sitterRequests > 0);
   dot('sitterDashboard', a.sitterRequests > 0 || a.verifyAction);

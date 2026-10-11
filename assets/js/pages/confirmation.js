@@ -22,7 +22,7 @@ Pages.confirmation = {
         ${UI.avatar(s.initial,{size:44,fs:16,gold:s.gold})}
         <div style="flex:1">
           <div style="font-weight:800">${esc(s.name)}</div>
-          <div class="muted" style="font-size:12.5px">House sitting · ${Booking.money(q.total)} · held until complete</div>
+          <div class="muted" style="font-size:12.5px">${esc(window.serviceLabel(App.lastServiceKind || (window.B && B.serviceKind) || 'house_sitting'))} · ${Booking.money(q.total)} · held until complete</div>
         </div>
       </div>
 

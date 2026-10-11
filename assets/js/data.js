@@ -158,10 +158,19 @@ function timeAgo(iso) {
   return Math.floor(mins/1440) + 'd';
 }
 
+/* Parse a 'YYYY-MM-DD' string as a LOCAL date (not UTC) so a date never shifts a
+   day in timezones behind UTC — e.g. Toronto showing Oct 8 for a stored Oct 9. */
+function localDate(x){
+  if (typeof x === 'string' && /^\d{4}-\d{2}-\d{2}/.test(x)){
+    var p = x.slice(0,10).split('-');
+    return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+  }
+  return new Date(x);
+}
 function fmtRange(a, b) {
   var o = { month:'short', day:'numeric' };
-  var s = new Date(a).toLocaleDateString('en-CA', o);
-  var e = new Date(b).toLocaleDateString('en-CA', o);
+  var s = localDate(a).toLocaleDateString('en-CA', o);
+  var e = localDate(b).toLocaleDateString('en-CA', o);
   return s === e ? s : s + ' – ' + e;
 }
 
@@ -477,6 +486,13 @@ window.db = {
           .in('conversation_id', ids).is('read_at', null).neq('sender_id', user.id);
         out.unreadMessages = msgs.count || 0;
       }
+    } catch(e){ /* ignore */ }
+
+    // unread notifications (for the bell)
+    try {
+      var nc = await sb.from('notifications').select('id', { count:'exact', head:true })
+        .eq('profile_id', user.id).eq('read', false);
+      out.unreadNotifications = nc.count || 0;
     } catch(e){ /* ignore */ }
 
     // role-specific pending actions
@@ -997,15 +1013,20 @@ window.db = {
     if (!LIVE()) return { earnings: 0, upcoming: 0, rating: '5.0', pending: 0 };
     var sid = await this.mySitterId();
     if (!sid) return { earnings:0, upcoming:0, rating:'5.0', pending:0 };
+    // Founding sitters keep 90% (10% fee); everyone else keeps 85% (15% fee).
+    var F = (CONFIG.FEES) || {};
+    var founding = false;
+    try { var sp = await sb.from('sitter_profiles').select('is_founding').eq('id', sid).single();
+          founding = !!(sp.data && sp.data.is_founding); } catch(e){}
+    var sRate = founding ? (F.FOUNDING_SITTER_RATE || 0.10) : (F.SITTER_RATE || 0.15);
     var bk = await sb.from('bookings').select('subtotal, total, status, start_date').eq('sitter_id', sid);
     var rv = await sb.from('reviews').select('rating').eq('sitter_id', sid);
     var earnings = 0, upcoming = 0, pending = 0;
     var today = isoDate(new Date());
     (bk.data || []).forEach(function(b){
-      // Sitter EARNINGS = their base price minus the platform's sitter fee (they keep 85%),
+      // Sitter EARNINGS = their base price minus the platform's sitter fee,
       // NOT the parent's total (which includes the parent fee + HST).
       if (b.status === 'completed') {
-        var sRate = (CONFIG.FEES && CONFIG.FEES.SITTER_RATE) || 0.15;
         earnings += Number(b.subtotal || 0) * (1 - sRate);
       }
       if (b.status === 'accepted' && b.start_date >= today) upcoming++;
@@ -1070,6 +1091,12 @@ window.db = {
     if (!Object.keys(patch).length) return { ok:true };
     var res = await sb.from('sitter_profiles').update(patch).eq('id', sid);
     if (res.error) throw res.error;
+    // Keep the sitter's city on their profile too, so owner area-search (which
+    // reads profiles.city via sitter_cards) finds them.
+    if (details.address_parts && details.address_parts.city){
+      try { var u = await this.currentUser();
+            if (u) await sb.from('profiles').update({ city: details.address_parts.city }).eq('id', u.id); } catch(e){}
+    }
     return { ok:true };
   },
 

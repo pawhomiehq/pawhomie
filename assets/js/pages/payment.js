@@ -123,14 +123,14 @@ Pages.payment = {
           });
           if (result.error) throw new Error(result.error.message);
           await db.attachPaymentToBooking(bookingId, intentId);
-          App.lastBooking = { quote:q, dates:{ start:B.startDate, end:B.endDate }, id: bookingId };
+          App.lastBooking = { quote:q, dates:{ start:B.startDate, end:B.endDate }, id: bookingId }; App.lastServiceKind = B.serviceKind; App.lastPetName = (B.petName||App.lastPetName);
           Router.go('confirmation');
         } else {
           var res = await db.createBooking({
             sitterId:s.id, petId:B.petId, kind:B.serviceKind, startDate:B.startDate, endDate:B.endDate,
             subtotal:q.subtotal, serviceFee:q.fee, tax:q.tax, total:q.total, note:B.note
           });
-          App.lastBooking = { quote:q, dates:{ start:B.startDate, end:B.endDate }, id: res.booking ? res.booking.id : null };
+          App.lastBooking = { quote:q, dates:{ start:B.startDate, end:B.endDate }, id: res.booking ? res.booking.id : null }; App.lastServiceKind = B.serviceKind; App.lastPetName = (B.petName||App.lastPetName);
           Router.go('confirmation');
         }
       } catch (e) {

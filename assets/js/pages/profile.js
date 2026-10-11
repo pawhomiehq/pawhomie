@@ -5,14 +5,14 @@ Pages.profile = {
     return `
   <div class="page" style="padding-top:0;padding-left:0;padding-right:0">
     <div style="position:relative">
-      ${UI.photo('cover','height:220px;border-radius:0 0 28px 28px')}
+      ${UI.photo('cover','height:220px;border-radius:0 0 28px 28px',true)}
       <div class="back" data-go="search" style="position:absolute;top:14px;left:16px">\u2039</div>
     </div>
     <div class="wrap" style="max-width:820px">
       <div style="display:flex;gap:14px;align-items:center;margin-top:-34px;position:relative">
         ${UI.avatar(s.initial,{size:70,fs:24,gold:s.gold,border:true})}
         <div style="flex:1;padding-top:30px">
-          <div class="row-sb"><div style="font-size:20px;font-weight:900">${esc(s.name)}</div><div class="stars">\u2605 ${s.rating} <small class="muted">(${s.reviews})</small></div></div>
+          <div class="row-sb"><div style="font-size:20px;font-weight:900">${esc(s.name)}</div><div class="stars">${s.reviews>0 ? '\u2605 '+s.rating+' <small class="muted">('+s.reviews+')</small>' : '<small class="muted">New</small>'}</div></div>
           <div class="verified" style="margin-top:2px">${UI.icon('check',14)} ID & background verified</div>
         </div>
       </div>
