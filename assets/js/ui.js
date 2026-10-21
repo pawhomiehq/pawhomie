@@ -1,6 +1,7 @@
 /* Shared UI helpers (icons + small components) */
 const ICONS = {
   home:'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+  heart:'M12 21C5 15.5 3 12 3 8.5 3 5.5 5.5 4 8 5.2 9 5.7 12 8 12 8s3-2.3 4-2.8C18.5 4 21 5.5 21 8.5 21 12 19 15.5 12 21z',
   image:'M3 5h18v14H3zM3 15l5-5 4 4 3-3 6 6M8.5 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z',
   paw:'M12 14c-2 0-3.6 1.7-3.6 3.2S10 20 12 20s3.6-1.3 3.6-2.8S14 14 12 14zM6 9.5a1.7 1.7 0 1 0 0 3.4 1.7 1.7 0 0 0 0-3.4zM18 9.5a1.7 1.7 0 1 0 0 3.4 1.7 1.7 0 0 0 0-3.4zM9 6a1.7 1.7 0 1 0 0 3.4A1.7 1.7 0 0 0 9 6zM15 6a1.7 1.7 0 1 0 0 3.4A1.7 1.7 0 0 0 15 6z',
   search:'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-4-4',
@@ -135,12 +136,14 @@ function renderNav(active){
                            isSitter:function(){return false;}, isAdmin:function(){return false;} };
 
   /* ---- bottom tabs: different for each side ---- */
+  // Bottom tabs follow the side you're on, so a dual account sees Paw Homie tabs
+  // while on the Paw Homie side and pet-owner tabs on the owner side.
+  var SITTER_PAGES = { sitterDashboard:1, requests:1, availability:1, services:1, payouts:1, verification:1, sitterReviews:1 };
+  var onSitterSide = !!SITTER_PAGES[active];
   var tabs;
-  if (R.isGuest()){
-    tabs = [];                                     // visitors get the top bar only
-  } else if (R.isAdmin()){
-    tabs = [];                                     // admin is a single locked-down panel
-  } else if (R.isSitter() && !R.isOwner()){
+  if (R.isGuest() || R.isAdmin()){
+    tabs = [];                                     // visitors / admin: top bar only
+  } else if ((R.isSitter() && !R.isOwner()) || (onSitterSide && R.isSitter())){
     tabs = [['sitterDashboard','Home','home'],['requests','Requests','list'],
             ['messages','Messages','msg'],['settings','Account','user']];
   } else {
@@ -184,9 +187,16 @@ function renderNav(active){
              '<a data-go="settings" class="nav-hide-mobile '+(active==='settings'?'on':'')+'">Account</a>';
   }
 
-  // Notifications bell — visible on mobile AND desktop for signed-in consumers.
+  // Notifications bell + profile avatar — visible on mobile AND desktop for
+  // signed-in consumers. Tapping the avatar opens My Profile from anywhere.
   if (!R.isGuest() && !R.isAdmin()){
     links += '<a data-go="notifications" class="nav-bell'+(active==='notifications'?' on':'')+'" aria-label="Notifications">'+icon('bell',20)+'</a>';
+    var pr = R.profile || {};
+    var pinit = (pr.full_name ? pr.full_name.charAt(0).toUpperCase() : '?');
+    var pava = pr.photo_url
+      ? '<img src="'+pr.photo_url+'" alt="">'
+      : '<span class="nav-ava-i'+(pr.avatar_gold?' gold':'')+'">'+pinit+'</span>';
+    links += '<a data-go="myProfile" class="nav-ava'+(active==='myProfile'||active==='editProfile'?' on':'')+'" aria-label="My profile">'+pava+'</a>';
   }
 
   var tn = document.getElementById('topnav');
@@ -227,7 +237,7 @@ function applyNavBadges(a){
   dot('verification', a.verifyAction);
   dot('ownerVerification', a.ownerVerifyAction);
 }
-const NO_TAB = ['favorites','welcome','signup','profile','booking','payment','confirmation','chat','petProfile','bookingDetail','review','services','availability','verification','payouts','requests','notifications'];
+const NO_TAB = ['favorites','welcome','signup','profile','booking','payment','confirmation','chat','petProfile','bookingDetail','review','services','availability','verification','payouts','requests','notifications','myProfile','editProfile'];
 function toast(msg){ var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(window._tt); window._tt=setTimeout(function(){t.classList.remove('show');},2200); }
 /* ---- Canadian address fields (reusable) ---- */
 var CA_PROVINCES = ['ON','QC','BC','AB','MB','SK','NS','NB','NL','PE','NT','YT','NU'];

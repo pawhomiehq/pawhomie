@@ -43,6 +43,7 @@ window.ACCESS = {
   ownerVerification: 'owner',
   sitterReviews: 'sitter',
   editProfile: 'user',
+  myProfile: 'user',
   videoCall: 'user',
   petProfile:     'owner',
   review:         'owner',

@@ -11,12 +11,12 @@ Pages.settings = { render(){
     </div>
     <div class="anim d1">
       ${isAdmin ? rowLink('Admin panel','admin') : ''}
+      ${!isAdmin ? rowLink('Edit profile & photo','editProfile') : ''}
       ${isOwner ? rowLink('My pets','petProfile') : ''}
       ${isOwner ? rowLink('Verify my ID','ownerVerification') : ''}
       ${!isAdmin ? rowLink('Notifications','notifications') : ''}
-      ${(isSitter && isOwner) ? rowLink('Switch to Paw Homie','sitterDashboard') : ''}
-      ${(isSitter && !isOwner) ? rowLink('My Paw Homie dashboard','sitterDashboard') : ''}
-      ${(!isSitter && !isAdmin) ? rowLink('Become a Paw Homie','signup') : ''}
+      ${isSitter ? rowLink('Switch to Paw Homie','sitterDashboard') : ''}
+      ${(!isSitter && !isAdmin) ? '<div class="card conv" id="becomeSitterRow" style="margin-bottom:10px;padding:15px 16px;cursor:pointer"><span style="flex:1;font-weight:700">Become a Paw Homie</span><span style="color:var(--muted)">›</span></div>' : ''}
       ${isSitter ? rowLink('Verification & documents','verification') : ''}
       ${isSitter ? rowLink('Payouts','payouts') : ''}
     </div>
@@ -30,10 +30,27 @@ Pages.settings = { render(){
     if (card && p){
       var email = (window.App && App.user && App.user.email) ? App.user.email : '';
       var name = p.full_name || 'Your account';
-      card.innerHTML = UI.avatar((name.charAt(0)||'?').toUpperCase(),{size:56,fs:20,gold:!!p.avatar_gold}) +
-        '<div><div style="font-weight:800;font-size:17px">'+name+'</div>'+
-        '<div class="muted" style="font-size:13px">'+ (p.city ? p.city + (email?' \u00b7 ':'') : '') + email +'</div></div>';
+      var avatarHtml = p.photo_url
+        ? '<div class="ep-avatar" style="width:56px;height:56px;margin:0"><img src="'+p.photo_url+'" alt=""></div>'
+        : UI.avatar((name.charAt(0)||'?').toUpperCase(),{size:56,fs:20,gold:!!p.avatar_gold});
+      card.innerHTML = avatarHtml +
+        '<div><div style="font-weight:800;font-size:17px">'+esc(name)+'</div>'+
+        '<div class="muted" style="font-size:13px">'+ esc((p.city ? p.city + (email?' \u00b7 ':'') : '') + email) +'</div></div>';
     }
+
+    // "Become a Paw Homie" \u2014 adds the sitter role to this account, then starts
+    // the Paw Homie application (which still needs its own approval).
+    var bs = document.getElementById('becomeSitterRow');
+    if (bs) bs.addEventListener('click', async function(){
+      bs.style.opacity = '.5';
+      try {
+        await db.becomeSitter();
+        await Role.load(true);
+        UI.toast('Welcome aboard \ud83d\udc3e Let\u2019s get you set up');
+        Router.go('verification');
+      } catch(e){ bs.style.opacity='1'; UI.toast(e.message || 'Could not start. Try again.'); }
+    });
+
     var b = document.getElementById('logoutBtn');
     if(!b) return;
     b.addEventListener('click', async function(){

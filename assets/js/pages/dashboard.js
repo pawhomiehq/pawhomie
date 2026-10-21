@@ -12,11 +12,23 @@ Pages.dashboard = { render(){ return `
       <div class="card qa" data-go="messages"><div class="qa-ic" style="background:var(--tint2);color:var(--gold-dk)">${UI.icon('msg',20)}</div><div style="font-weight:800;font-size:13px">Messages</div></div>
       <div class="card qa" data-go="favorites"><div class="qa-ic" style="background:#FDECEC;color:#E5484D"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21C5 15.5 3 12 3 8.5 3 5.5 5.5 4 8 5.2 9 5.7 12 8 12 8s3-2.3 4-2.8C18.5 4 21 5.5 21 8.5 21 12 19 15.5 12 21z"/></svg></div><div style="font-weight:800;font-size:13px">Favorites</div></div>
       <div class="card qa" data-go="petProfile"><div class="qa-ic" style="background:var(--tint);color:var(--muted)">\uD83D\uDC3E</div><div style="font-weight:800;font-size:13px">My pets</div></div>
+      ${(window.Role && Role.isSitter())
+        ? '<div class="card qa" data-go="sitterDashboard"><div class="qa-ic" style="background:var(--tint2);color:var(--gold-dk)">'+UI.icon('paw',20)+'</div><div style="font-weight:800;font-size:13px">Switch to Paw Homie</div></div>'
+        : '<div class="card qa" id="qaBecomeSitter"><div class="qa-ic" style="background:var(--tint2);color:var(--gold-dk)">'+UI.icon('paw',20)+'</div><div style="font-weight:800;font-size:13px">Become a Paw Homie</div></div>'}
     </div>
     <div class="sec anim">Your pets</div>
     <div id="dashPets"></div>
   </div>`; },
   async mount(){
+    // "Become a Paw Homie" tile — adds the sitter role, then starts the application.
+    var becomeBtn = document.getElementById('qaBecomeSitter');
+    if (becomeBtn) becomeBtn.addEventListener('click', async function(){
+      becomeBtn.style.opacity = '.5';
+      try { await db.becomeSitter(); await Role.load(true);
+        UI.toast('Welcome aboard 🐾 Let’s get you set up'); Router.go('verification'); }
+      catch(e){ becomeBtn.style.opacity='1'; UI.toast(e.message || 'Could not start. Try again.'); }
+    });
+
     var p = await db.getProfile();
     if(p){
       var first = (p.full_name || '').split(' ')[0] || 'there';

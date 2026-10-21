@@ -208,8 +208,9 @@ window.Booking = {
     if (F.PARENT_MIN != null) parentFee = Math.max(parentFee, F.PARENT_MIN);
     if (F.PARENT_MAX != null) parentFee = Math.min(parentFee, F.PARENT_MAX);
     parentFee = this._round(parentFee);
-    // HST applies to the platform fee only (Bilal's spec)
-    var tax = this._round(parentFee * (CONFIG.TAX_RATE || 0));
+    // HST (13%) applies to the booking total — the sitter's price PLUS our fee.
+    // (Bilal, Oct 2026.) e.g. $120 + $8.40 fee -> 13% of $128.40 = $16.69.
+    var tax = this._round((subtotal + parentFee) * (CONFIG.TAX_RATE || 0));
     var total = this._round(subtotal + parentFee + tax);   // what the parent pays
     // sitter side
     var sRate = opts.sitterRate != null ? opts.sitterRate
@@ -249,7 +250,7 @@ window.db = {
   async signUp(email, password, fullName, city, role) {
     if (!LIVE()) {
       window.MOCK.session = { full_name: fullName || 'You', city: city || 'Toronto, ON',
-        is_owner: role !== 'sitter', is_sitter: role === 'sitter' || role === 'both', is_admin:false };
+        is_owner: true, is_sitter: role === 'sitter' || role === 'both', is_admin:false };
       return { ok:true, mock:true };
     }
     var res = await sb.auth.signUp({ email: email, password: password,
@@ -410,7 +411,7 @@ window.db = {
   async setRole(role) {
     if (!LIVE()) {
       if (window.MOCK.session) {
-        window.MOCK.session.is_owner  = role === 'owner'  || role === 'both';
+        window.MOCK.session.is_owner  = true; // every account can be a pet owner
         window.MOCK.session.is_sitter = role === 'sitter' || role === 'both';
       }
       return { ok:true, mock:true };
@@ -418,7 +419,7 @@ window.db = {
     var user = await this.currentUser();
     if (!user) throw new Error('Not signed in.');
     var patch = {
-      is_owner:  role === 'owner'  || role === 'both',
+      is_owner:  true, // dual-role: every account is a pet owner; sitter is added on top
       is_sitter: role === 'sitter' || role === 'both'
     };
     var res = await sb.from('profiles').update(patch).eq('id', user.id);
@@ -432,6 +433,24 @@ window.db = {
         if (ins.error) console.error('create sitter_profile:', ins.error.message);
       }
     }
+    return { ok:true };
+  },
+
+  /* Add the Paw Homie role to an existing account (keeps the owner side).
+     The sitter side still needs its own approval (quiz + docs + admin review). */
+  async becomeSitter() {
+    if (!LIVE()) { if (window.MOCK.session) window.MOCK.session.is_sitter = true; return { ok:true }; }
+    var user = await this.currentUser();
+    if (!user) throw new Error('Please sign in first.');
+    var res = await sb.from('profiles').update({ is_sitter: true }).eq('id', user.id);
+    if (res.error) throw res.error;
+    var exists = await sb.from('sitter_profiles').select('id').eq('profile_id', user.id).maybeSingle();
+    if (!exists.data) {
+      var ins = await sb.from('sitter_profiles').insert({ profile_id: user.id, published: false });
+      if (ins.error) console.error('create sitter_profile:', ins.error.message);
+    }
+    if (window.App.profile) window.App.profile.is_sitter = true;
+    if (window.Role && Role.profile) Role.profile.is_sitter = true;
     return { ok:true };
   },
 

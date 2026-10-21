@@ -9,7 +9,7 @@ Pages.feeSchedule = {
 <ul>
 <li><strong>7% of the Booking subtotal, minimum $3.50, maximum $25 per Booking.</strong></li>
 <li>It is included in the total price shown before you pay.</li>
-<li>HST (13%) is added to our fee where it applies and is shown at checkout.</li>
+<li>HST (13%) is applied to your Booking total (the Paw Homie&#39;s price plus our fee) and is shown at checkout.</li>
 </ul>
 <h2>2. Homie Service Fee</h2>
 <ul>

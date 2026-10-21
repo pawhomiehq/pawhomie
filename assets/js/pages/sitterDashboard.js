@@ -28,7 +28,7 @@ Pages.sitterDashboard = {
         <div class="card qa" data-go="verification"><div class="qa-ic" style="background:var(--tint2);color:var(--gold-dk)">${UI.icon('shield',20)}</div><div style="font-weight:800;font-size:13px">Verification</div></div>
         <div class="card qa" data-go="sitterReviews"><div class="qa-ic" style="background:var(--tint);color:var(--teal)">${UI.icon("check",20)}</div><div style="font-weight:800;font-size:13px">My reviews</div></div>
         <div class="card qa" data-go="payouts"><div class="qa-ic" style="background:var(--tint);color:var(--teal)">${UI.icon('wallet',20)}</div><div style="font-weight:800;font-size:13px">Payouts</div></div>
-        <div class="card qa" data-go="dashboard"><div class="qa-ic" style="background:var(--tint2);color:var(--gold-dk)">${UI.icon('user',20)}</div><div style="font-weight:800;font-size:13px">Owner view</div></div>
+        <div class="card qa" data-go="dashboard"><div class="qa-ic" style="background:var(--tint2);color:var(--gold-dk)">${UI.icon('user',20)}</div><div style="font-weight:800;font-size:13px">Switch to pet owner</div></div>
       </div>
     </div>`;
   },
