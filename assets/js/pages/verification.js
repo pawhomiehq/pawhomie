@@ -26,9 +26,19 @@ Pages.verification = {
   },
   async mount(){
     VS = { view:'status', i:0, answers:[], files:{}, previews:{} };
+    // If the owner already verified their government ID, we reuse it for the
+    // Paw Homie application instead of asking for it again.
+    try {
+      var ov = await db.getOwnerVerification();
+      VS.ownerIdVerified = !!(ov && ov.id_status === 'verified');
+      VS.ownerIdDoc = ov ? ov.id_document : '';
+    } catch(e){ VS.ownerIdVerified = false; VS.ownerIdDoc = ''; }
     await drawV();
   }
 };
+
+// Is this document already satisfied by the owner's verified ID?
+function idCoveredByOwner(key){ return key === 'id' && VS.ownerIdVerified; }
 
 async function drawV(){
   var host = document.getElementById('vView');
@@ -42,7 +52,10 @@ async function drawV(){
   VS.app = app || {};
   var status = app ? app.status : 'draft';
   var docs = (app && app.documents) || {};
-  var detailsDone = !!(app && app.phone && app.home_type && docs.id && docs.selfie && docs.home);
+  // The government-ID requirement is met either by uploading it here OR by the
+  // owner's already-verified ID (we don't ask the same person for ID twice).
+  var idOk = !!docs.id || VS.ownerIdVerified;
+  var detailsDone = !!(app && app.phone && app.home_type && idOk && docs.selfie && docs.home);
   var quizDone = !!(app && app.quiz_passed);
   var score = app ? app.quiz_score : null;
 
@@ -71,7 +84,7 @@ async function drawV(){
 
     <div class="step-row card anim d1 ${detailsDone?'done':''}" id="stepDetails">
       <div class="step-ic">${detailsDone?UI.icon('check',20):'1'}</div>
-      <div style="flex:1"><b>Your details &amp; documents</b><div class="muted" style="font-size:12.5px">${detailsDone?'Completed':'Address, home type, ID and photos'}</div></div>
+      <div style="flex:1"><b>Your details &amp; documents</b><div class="muted" style="font-size:12.5px">${detailsDone?'Completed':(VS.ownerIdVerified?'Address, home type and photos — your ID is already verified ✓':'Address, home type, ID and photos')}</div></div>
       <span class="step-go">${detailsDone?'Edit':'Start'} \u203a</span>
     </div>
 
@@ -136,6 +149,18 @@ function drawApplication(host){
     <div id="docList">
       ${DOCS.map(function(d){
         var have = VS.previews[d.key] || docs[d.key];
+        // Government ID already verified on the owner side \u2192 reuse it, no re-upload.
+        if (idCoveredByOwner(d.key) && !VS.previews[d.key] && !docs[d.key]){
+          return `<div class="doc-row card anim d1 done" data-doc="${d.key}">
+            <div class="doc-thumb" id="thumb-${d.key}">${UI.icon('check',20)}</div>
+            <div style="flex:1;min-width:0">
+              <b style="font-size:14px">${d.label}</b>
+              <div class="muted" style="font-size:12px">Already verified on your account \u2713 \u2014 no need to upload again</div>
+            </div>
+            <button class="btn ghost sm" style="width:auto;padding:8px 14px" data-upload="${d.key}">Replace</button>
+            <input type="file" accept="image/*" data-file="${d.key}" style="display:none">
+          </div>`;
+        }
         return `<div class="doc-row card anim d1" data-doc="${d.key}">
           <div class="doc-thumb" id="thumb-${d.key}">${VS.previews[d.key]?('<img src="'+VS.previews[d.key]+'">'):(docs[d.key]?UI.icon('check',20):UI.icon('image',20))}</div>
           <div style="flex:1;min-width:0">
@@ -213,9 +238,10 @@ function drawApplication(host){
     if (!addr.ok){ err.textContent = addr.error; err.style.display='block'; return; }
     if (!homeType){ err.textContent='Please choose your home type.'; err.style.display='block'; return; }
 
-    // required docs: either newly picked, or already uploaded
+    // required docs: either newly picked, already uploaded, or (for ID) covered
+    // by the owner's already-verified government ID.
     var existing = (VS.app && VS.app.documents) || {};
-    var missing = DOCS.filter(function(d){ return d.required && !VS.files[d.key] && !existing[d.key]; });
+    var missing = DOCS.filter(function(d){ return d.required && !VS.files[d.key] && !existing[d.key] && !idCoveredByOwner(d.key); });
     if (missing.length){ err.textContent='Please add: '+missing.map(function(d){return d.label;}).join(', ')+'.'; err.style.display='block'; return; }
 
     btn.disabled = true; btn.textContent = 'Uploading…';
@@ -227,6 +253,9 @@ function drawApplication(host){
         var res = await db.uploadDoc(keys[i], VS.files[keys[i]]);
         documents[keys[i]] = res.path;
       }
+      // Reuse the owner's verified ID so the application has it on file
+      // without asking the person to upload the same document twice.
+      if (!documents.id && VS.ownerIdVerified){ documents.id = VS.ownerIdDoc || 'owner-verified'; }
       await db.saveApplication({
         phone: phone,
         address: addr.address,

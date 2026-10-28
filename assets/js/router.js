@@ -28,6 +28,15 @@ window.Router = {
       page = 'welcome';
     }
 
+    // Remember which side of the app we're on, so side-neutral pages
+    // (settings, edit profile, my profile) know whether the owner or the
+    // Paw Homie opened them. Owner/sitter pages set it; neutral pages keep it.
+    var OWNER_PAGES  = { dashboard:1, bookings:1, favorites:1, petProfile:1, ownerVerification:1, booking:1, payment:1, confirmation:1, bookingDetail:1, review:1 };
+    var SITTER_PAGES = { sitterDashboard:1, requests:1, availability:1, services:1, payouts:1, verification:1, sitterReviews:1 };
+    if (SITTER_PAGES[page])      window.App.side = 'sitter';
+    else if (OWNER_PAGES[page])  window.App.side = 'owner';
+    else if (!window.App.side)   window.App.side = 'owner';   // sensible default
+
     // Let the page we're leaving tear itself down (e.g. destroy the live video
     // call frame so the camera & mic are released). Registered by pages that
     // hold onto hardware or timers.

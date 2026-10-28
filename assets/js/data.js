@@ -77,7 +77,7 @@ window.MOCK = {
   ]
 };
 
-window.App = { currentSitter: window.MOCK.sitters[0], user: null, searchService: 'house_sitting', searchArea: '', _sitterId: null };
+window.App = { currentSitter: window.MOCK.sitters[0], user: null, searchService: 'house_sitting', searchArea: '', _sitterId: null, side: 'owner' };
 
 /* The services PawHomie offers. The "How" in Where / When / Who / How. */
 window.SERVICES = [
@@ -214,7 +214,7 @@ window.Booking = {
     var total = this._round(subtotal + parentFee + tax);   // what the parent pays
     // sitter side
     var sRate = opts.sitterRate != null ? opts.sitterRate
-              : (founding && F.FOUNDING_ACTIVE ? (F.FOUNDING_SITTER_RATE||0.12)
+              : (founding && F.FOUNDING_ACTIVE ? (F.FOUNDING_SITTER_RATE||0.10)
               : (opts.loyal ? (F.SITTER_LOYAL_RATE||0.12) : (F.SITTER_RATE||0.15)));
     var sitterFee = this._round(subtotal * sRate);
     var sitterEarns = this._round(subtotal - sitterFee);
@@ -1029,15 +1029,23 @@ window.db = {
 
   /* Headline numbers for the sitter dashboard. */
   async getSitterStats() {
-    if (!LIVE()) return { earnings: 0, upcoming: 0, rating: '5.0', pending: 0 };
-    var sid = await this.mySitterId();
-    if (!sid) return { earnings:0, upcoming:0, rating:'5.0', pending:0 };
     // Founding sitters keep 90% (10% fee); everyone else keeps 85% (15% fee).
     var F = (CONFIG.FEES) || {};
+    function rateInfo(isFounding){
+      var r = isFounding ? (F.FOUNDING_SITTER_RATE || 0.10) : (F.SITTER_RATE || 0.15);
+      return { founding: !!isFounding, feeRate: r, feePct: Math.round(r*100), keepPct: Math.round((1-r)*100) };
+    }
+    if (!LIVE()){
+      var mf = !!(window.MOCK.application && window.MOCK.application.is_founding);
+      return Object.assign({ earnings: 0, upcoming: 0, rating: '5.0', pending: 0 }, rateInfo(mf));
+    }
+    var sid = await this.mySitterId();
+    if (!sid) return Object.assign({ earnings:0, upcoming:0, rating:'5.0', pending:0 }, rateInfo(false));
     var founding = false;
     try { var sp = await sb.from('sitter_profiles').select('is_founding').eq('id', sid).single();
           founding = !!(sp.data && sp.data.is_founding); } catch(e){}
-    var sRate = founding ? (F.FOUNDING_SITTER_RATE || 0.10) : (F.SITTER_RATE || 0.15);
+    var info = rateInfo(founding);
+    var sRate = info.feeRate;
     var bk = await sb.from('bookings').select('subtotal, total, status, start_date').eq('sitter_id', sid);
     var rv = await sb.from('reviews').select('rating').eq('sitter_id', sid);
     var earnings = 0, upcoming = 0, pending = 0;
@@ -1053,7 +1061,7 @@ window.db = {
     });
     var ratings = (rv.data || []).map(function(r){ return Number(r.rating); });
     var avg = ratings.length ? (ratings.reduce(function(a,b){return a+b;},0) / ratings.length) : 5;
-    return { earnings: Math.round(earnings), upcoming: upcoming, rating: avg.toFixed(1), pending: pending };
+    return Object.assign({ earnings: Math.round(earnings), upcoming: upcoming, rating: avg.toFixed(1), pending: pending }, info);
   },
 
   /* accept / decline a request → updates the booking the owner sees. */
@@ -1249,14 +1257,14 @@ window.db = {
   },
 
   /* The sitter fee rate that applies to a booking:
-     founding (12%) → loyalty after 4 completed together (12%) → standard (15%). */
+     founding (10%) → loyalty after 4 completed together (12%) → standard (15%). */
   async getSitterFeeRate(sitterProfileId, ownerId) {
     var F = (CONFIG.FEES) || {};
     var std = F.SITTER_RATE || 0.15;
     if (!LIVE()) return std;
     try {
       var sp = await sb.from('sitter_profiles').select('is_founding').eq('id', sitterProfileId).single();
-      if (F.FOUNDING_ACTIVE && sp.data && sp.data.is_founding) return F.FOUNDING_SITTER_RATE || 0.12;
+      if (F.FOUNDING_ACTIVE && sp.data && sp.data.is_founding) return F.FOUNDING_SITTER_RATE || 0.10;
       if (ownerId){
         var done = await sb.from('bookings').select('id', { count:'exact', head:true })
           .eq('sitter_id', sitterProfileId).eq('owner_id', ownerId).eq('status','completed');
