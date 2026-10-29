@@ -47,7 +47,41 @@ window.App._confetti = function(){
     '<circle cx="100" cy="42" r="3.2" fill="#22302E"/><circle cx="108" cy="48" r="3.6" fill="#22302E"/>'+
     '<path d="M104 54 q4 3 8 0" stroke="#22302E" stroke-width="2" fill="none" stroke-linecap="round"/>'+
     '<rect x="74" y="56" width="18" height="6" rx="3" fill="#21706F"/></g></svg>';
-  function walk(){ p.classList.remove('walk'); void p.offsetWidth; p.classList.add('walk'); }
+
+  // The walk is driven by the Web Animations API so a tap can speed it up from
+  // wherever it currently is (changing a CSS animation's duration would make it
+  // jump). If WAAPI isn't available, fall back to the old CSS class animation.
+  var anim = null, boostT = null, canWAAPI = (typeof p.animate === 'function');
+  function endX(){ return (window.innerWidth || 1000) + 160; }
+
+  function walk(){
+    if (!canWAAPI){ p.classList.remove('walk-css'); void p.offsetWidth; p.classList.add('walk'); p.classList.add('walk-css'); return; }
+    if (anim){ try { anim.cancel(); } catch(e){} }
+    p.classList.add('walk');
+    anim = p.animate(
+      [ { transform:'translateX(-160px)' }, { transform:'translateX('+endX()+'px)' } ],
+      { duration: 11000, easing:'linear', fill:'forwards' }
+    );
+    anim.onfinish = function(){ p.classList.remove('walk'); };
+  }
+
+  // Tap/click the puppy → it hops and dashes faster for a moment.
+  function boost(){
+    // jump (vertical hop on the body) — restart so repeated taps re-trigger
+    p.classList.remove('jump'); void p.offsetWidth; p.classList.add('jump');
+    // faster legs/tail for a moment
+    p.classList.add('dash');
+    // speed the forward run from its current position (no teleport)
+    if (canWAAPI && anim && anim.playState === 'running'){ anim.playbackRate = 3.2; }
+    if (boostT) clearTimeout(boostT);
+    boostT = setTimeout(function(){
+      p.classList.remove('dash');
+      if (canWAAPI && anim){ try { anim.playbackRate = 1; } catch(e){} }
+    }, 1500);
+    setTimeout(function(){ p.classList.remove('jump'); }, 650);
+  }
+  p.addEventListener('pointerdown', boost);
+
   setTimeout(walk, 3000); setInterval(walk, 26000);
 })();
 /* go */

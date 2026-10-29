@@ -294,10 +294,12 @@ button{font-family:inherit}
 .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%) translateY(20px);z-index:80;background:var(--teal-dk);color:#fff;font-weight:700;font-size:16px;padding:12px 18px;border-radius:99px;box-shadow:var(--sh-lift);opacity:0;transition:.3s var(--ease);pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .puppy{position:fixed;bottom:64px;left:-160px;z-index:25;pointer-events:none;width:104px}
+/* the dog itself is tappable (the rest of the box stays click-through) */
+.puppy svg{pointer-events:auto;cursor:pointer}
 @media(min-width:900px){ .puppy{bottom:6px} }
 /* decorative mascot only on larger screens — it looked misaligned over phone content */
 @media(max-width:700px){ .puppy{display:none} }
-.puppy.walk{animation:walkAcross 11s linear forwards}
+.puppy.walk-css{animation:walkAcross 11s linear forwards}   /* fallback when Web Animations API is unavailable */
 @keyframes walkAcross{from{left:-160px}to{left:100vw}}
 .puppy .bounce{animation:bob .5s ease-in-out infinite;transform-origin:center bottom}
 @keyframes bob{50%{transform:translateY(-5px)}}
@@ -305,6 +307,11 @@ button{font-family:inherit}
 @keyframes wag{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(18deg)}}
 .puppy .ear{transform-origin:top center;animation:earbob .5s ease-in-out infinite}
 @keyframes earbob{50%{transform:rotate(6deg)}}
+/* tap reaction: a hop + faster legs */
+.puppy.jump .bounce{animation:pupjump .6s ease-out}
+@keyframes pupjump{0%{transform:translateY(0)}30%{transform:translateY(-34px)}55%{transform:translateY(-6px)}78%{transform:translateY(-18px)}100%{transform:translateY(0)}}
+.puppy.dash .tail{animation-duration:.14s}
+.puppy.dash .ear{animation-duration:.26s}
 
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001s !important;animation-iteration-count:1 !important;transition-duration:.01s !important}
