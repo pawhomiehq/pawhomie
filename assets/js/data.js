@@ -439,19 +439,79 @@ window.db = {
   /* Add the Paw Homie role to an existing account (keeps the owner side).
      The sitter side still needs its own approval (quiz + docs + admin review). */
   async becomeSitter() {
-    if (!LIVE()) { if (window.MOCK.session) window.MOCK.session.is_sitter = true; return { ok:true }; }
+    if (!LIVE()) {
+      if (window.MOCK.session) window.MOCK.session.is_sitter = true;
+      // Demo: new Paw Homies are founding (keep 90%) so the UI reflects it.
+      window.MOCK.application = Object.assign({ documents:{}, status:'draft' }, window.MOCK.application || {}, { is_founding: true });
+      return { ok:true };
+    }
     var user = await this.currentUser();
     if (!user) throw new Error('Please sign in first.');
     var res = await sb.from('profiles').update({ is_sitter: true }).eq('id', user.id);
     if (res.error) throw res.error;
-    var exists = await sb.from('sitter_profiles').select('id').eq('profile_id', user.id).maybeSingle();
+
+    // Founding status is granted the moment someone becomes a Paw Homie — the
+    // first 100 keep 90% — so it shows everywhere (payouts, dashboard) right
+    // away, not only after they finish the application.
+    var F = (CONFIG.FEES) || {};
+    var grantFounding = false;
+    if (F.FOUNDING_ACTIVE){
+      try { var cnt = await sb.from('sitter_profiles').select('id', { count:'exact', head:true }).eq('is_founding', true);
+            grantFounding = (cnt.count || 0) < (F.FOUNDING_CAP || 100); } catch(e){}
+    }
+
+    var exists = await sb.from('sitter_profiles').select('id, is_founding').eq('profile_id', user.id).maybeSingle();
     if (!exists.data) {
-      var ins = await sb.from('sitter_profiles').insert({ profile_id: user.id, published: false });
+      var row = { profile_id: user.id, published: false };
+      if (grantFounding){ row.is_founding = true; row.review_fee_status = 'waived'; }
+      var ins = await sb.from('sitter_profiles').insert(row);
       if (ins.error) console.error('create sitter_profile:', ins.error.message);
+    } else if (grantFounding && !exists.data.is_founding){
+      try { await sb.from('sitter_profiles').update({ is_founding:true, review_fee_status:'waived' }).eq('id', exists.data.id); } catch(e){}
     }
     if (window.App.profile) window.App.profile.is_sitter = true;
     if (window.Role && Role.profile) Role.profile.is_sitter = true;
     return { ok:true };
+  },
+
+  /* ---- Shared government ID ----
+     The same person shouldn't upload their ID twice. If they verified/submitted
+     it on one side, we copy that exact file into the other side's private bucket
+     so each admin review still reads from its own bucket (nothing else changes).
+  */
+  async copyIdOwnerToSitter(){
+    if (!LIVE()) return { ok:true, path:'demo/id' };
+    var v = await this.getOwnerVerification();
+    if (!v || !v.id_document) throw new Error('No ID on file.');
+    var signed = await this.getOwnerDocUrl(v.id_document);
+    if (!signed) throw new Error('Could not read your ID.');
+    var resp = await fetch(signed);
+    if (!resp.ok) throw new Error('Could not read your ID.');
+    var blob = await resp.blob();
+    var user = await this.currentUser();
+    var ext = (String(v.id_document).split('.').pop() || 'jpg').toLowerCase();
+    var path = user.id + '/id.' + ext;
+    var up = await sb.storage.from('sitter-docs').upload(path, blob, { upsert:true, contentType: blob.type || 'image/jpeg' });
+    if (up.error) throw up.error;
+    return { ok:true, path:path };
+  },
+
+  async copyIdSitterToOwner(){
+    if (!LIVE()) return { ok:true, path:'demo/id' };
+    var app = await this.getApplication();
+    var sp = app && app.documents ? app.documents.id : null;
+    if (!sp) throw new Error('No ID on file.');
+    var signed = await this.getDocUrl(sp);
+    if (!signed) throw new Error('Could not read your ID.');
+    var resp = await fetch(signed);
+    if (!resp.ok) throw new Error('Could not read your ID.');
+    var blob = await resp.blob();
+    var user = await this.currentUser();
+    var ext = (String(sp).split('.').pop() || 'jpg').toLowerCase();
+    var path = user.id + '/id.' + ext;
+    var up = await sb.storage.from('owner-docs').upload(path, blob, { upsert:true, contentType: blob.type || 'image/jpeg' });
+    if (up.error) throw up.error;
+    return { ok:true, path:path };
   },
 
   /* ---- sitters ---- */

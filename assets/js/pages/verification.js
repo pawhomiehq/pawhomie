@@ -26,19 +26,21 @@ Pages.verification = {
   },
   async mount(){
     VS = { view:'status', i:0, answers:[], files:{}, previews:{} };
-    // If the owner already verified their government ID, we reuse it for the
-    // Paw Homie application instead of asking for it again.
+    // If the person already uploaded a government ID on the owner side
+    // (submitted or verified), we reuse it here instead of asking again.
     try {
       var ov = await db.getOwnerVerification();
-      VS.ownerIdVerified = !!(ov && ov.id_status === 'verified');
+      var st = ov ? ov.id_status : '';
+      VS.ownerIdOnFile = !!(ov && ov.id_document && (st === 'verified' || st === 'pending'));
+      VS.ownerIdStatus = st;
       VS.ownerIdDoc = ov ? ov.id_document : '';
-    } catch(e){ VS.ownerIdVerified = false; VS.ownerIdDoc = ''; }
+    } catch(e){ VS.ownerIdOnFile = false; VS.ownerIdDoc = ''; }
     await drawV();
   }
 };
 
-// Is this document already satisfied by the owner's verified ID?
-function idCoveredByOwner(key){ return key === 'id' && VS.ownerIdVerified; }
+// Is the ID step already satisfied by an ID uploaded on the owner side?
+function idCoveredByOwner(key){ return key === 'id' && VS.ownerIdOnFile; }
 
 async function drawV(){
   var host = document.getElementById('vView');
@@ -54,7 +56,7 @@ async function drawV(){
   var docs = (app && app.documents) || {};
   // The government-ID requirement is met either by uploading it here OR by the
   // owner's already-verified ID (we don't ask the same person for ID twice).
-  var idOk = !!docs.id || VS.ownerIdVerified;
+  var idOk = !!docs.id || VS.ownerIdOnFile;
   var detailsDone = !!(app && app.phone && app.home_type && idOk && docs.selfie && docs.home);
   var quizDone = !!(app && app.quiz_passed);
   var score = app ? app.quiz_score : null;
@@ -84,7 +86,7 @@ async function drawV(){
 
     <div class="step-row card anim d1 ${detailsDone?'done':''}" id="stepDetails">
       <div class="step-ic">${detailsDone?UI.icon('check',20):'1'}</div>
-      <div style="flex:1"><b>Your details &amp; documents</b><div class="muted" style="font-size:12.5px">${detailsDone?'Completed':(VS.ownerIdVerified?'Address, home type and photos — your ID is already verified ✓':'Address, home type, ID and photos')}</div></div>
+      <div style="flex:1"><b>Your details &amp; documents</b><div class="muted" style="font-size:12.5px">${detailsDone?'Completed':(VS.ownerIdOnFile?'Address, home type and photos — your ID is already on file ✓':'Address, home type, ID and photos')}</div></div>
       <span class="step-go">${detailsDone?'Edit':'Start'} \u203a</span>
     </div>
 
@@ -155,7 +157,7 @@ function drawApplication(host){
             <div class="doc-thumb" id="thumb-${d.key}">${UI.icon('check',20)}</div>
             <div style="flex:1;min-width:0">
               <b style="font-size:14px">${d.label}</b>
-              <div class="muted" style="font-size:12px">Already verified on your account \u2713 \u2014 no need to upload again</div>
+              <div class="muted" style="font-size:12px">${VS.ownerIdStatus==='verified'?'Verified on your account':'Already uploaded on your account'} \u2713 \u2014 no need to upload again</div>
             </div>
             <button class="btn ghost sm" style="width:auto;padding:8px 14px" data-upload="${d.key}">Replace</button>
             <input type="file" accept="image/*" data-file="${d.key}" style="display:none">
@@ -253,9 +255,17 @@ function drawApplication(host){
         var res = await db.uploadDoc(keys[i], VS.files[keys[i]]);
         documents[keys[i]] = res.path;
       }
-      // Reuse the owner's verified ID so the application has it on file
-      // without asking the person to upload the same document twice.
-      if (!documents.id && VS.ownerIdVerified){ documents.id = VS.ownerIdDoc || 'owner-verified'; }
+      // Reuse the ID the person already uploaded on the owner side: copy that
+      // file into the sitter bucket so the application has its own valid copy
+      // (so the admin review still works) without asking them to upload again.
+      if (!documents.id && VS.ownerIdOnFile){
+        try { var cp = await db.copyIdOwnerToSitter(); documents.id = cp.path; }
+        catch(e){
+          btn.disabled = false; btn.textContent = 'Save & continue';
+          err.textContent = 'We couldn’t reuse your existing ID — please upload a photo of your ID.'; err.style.display = 'block';
+          return;
+        }
+      }
       await db.saveApplication({
         phone: phone,
         address: addr.address,

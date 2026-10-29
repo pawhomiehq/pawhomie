@@ -25,6 +25,13 @@ async function drawOV(){
   var v = await db.getOwnerVerification();
   var status = v ? v.id_status : 'unverified';
 
+  // If they already uploaded a government ID on the Paw Homie side, offer to
+  // reuse it here instead of asking for the same document again.
+  var sitterIdOnFile = false;
+  if (status !== 'verified' && status !== 'pending'){
+    try { var ap = await db.getApplication(); sitterIdOnFile = !!(ap && ap.documents && ap.documents.id); } catch(e){}
+  }
+
   if (status === 'verified'){
     host.innerHTML = ovBadge('#1E9E6A', UI.icon('check',30), 'You\u2019re verified \uD83C\uDF89',
       'Sitters can see you\u2019re a verified pet owner. Thanks for helping keep PawHomie safe.',
@@ -39,8 +46,21 @@ async function drawOV(){
   }
 
   var rejected = status === 'rejected';
+  // Reuse-existing-ID card (shown when an ID is already on file from the sitter side).
+  var reuseCard = (sitterIdOnFile && !rejected) ? `
+    <div class="card anim" style="padding:16px;margin-bottom:14px;display:flex;gap:12px;align-items:flex-start;background:#EAF6EF">
+      <span style="color:#1E8E5A;flex:none">${UI.icon('check',22)}</span>
+      <div style="flex:1">
+        <b>You already uploaded an ID</b>
+        <div class="muted" style="font-size:12.5px;margin-top:2px;line-height:1.5">We can use the government ID from your Paw Homie account \u2014 no need to upload it again.</div>
+        <button class="btn sm" id="ovReuse" style="width:auto;padding:9px 16px;margin-top:10px">Use my existing ID</button>
+        <div id="ovReuseErr" class="authError" style="display:none;margin-top:8px"></div>
+      </div>
+    </div>
+    <p class="muted anim" style="font-size:12px;text-align:center;margin-bottom:14px">\u2014 or upload a different one below \u2014</p>` : '';
   host.innerHTML = `
     ${rejected ? ovBadge('#C64B3B', UI.icon('bell',26), 'ID wasn\u2019t accepted', 'The photo wasn\u2019t clear enough. Please upload a clean, well-lit copy.', '') : ''}
+    ${reuseCard}
     <div class="card anim" style="padding:18px">
       <div style="font-weight:900;font-size:17px;margin-bottom:4px">Government ID</div>
       <p class="muted" style="font-size:13px;line-height:1.5;margin-bottom:14px">A driver\u2019s licence, passport or health card. This stays private \u2014 only our review team sees it, never sitters.</p>
@@ -55,6 +75,22 @@ async function drawOV(){
     <div id="ovErr" class="authError" style="display:none;margin-top:14px"></div>
     <div style="height:16px"></div>
     <button class="btn" id="ovSubmit">Submit for verification</button>`;
+
+  var reuseBtn = document.getElementById('ovReuse');
+  if (reuseBtn) reuseBtn.addEventListener('click', async function(){
+    var rerr = document.getElementById('ovReuseErr');
+    rerr.style.display = 'none';
+    reuseBtn.disabled = true; reuseBtn.textContent = 'Submitting…';
+    try {
+      var cp = await db.copyIdSitterToOwner();
+      await db.submitOwnerId(cp.path);
+      UI.toast('ID submitted for review 🎉');
+      await drawOV();
+    } catch(e){
+      reuseBtn.disabled = false; reuseBtn.textContent = 'Use my existing ID';
+      rerr.textContent = 'We couldn’t reuse your ID — please upload a photo below.'; rerr.style.display = 'block';
+    }
+  });
 
   var input = document.getElementById('ovFile');
   document.getElementById('ovUpload').addEventListener('click', function(){
