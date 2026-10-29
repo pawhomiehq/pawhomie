@@ -50,6 +50,12 @@ button{font-family:inherit}
 /* on mobile, show only the primary CTA links (login/dashboard); hide the long menu links */
 .topnav a{font-weight:700;font-size:14px;color:var(--muted);padding:7px 11px;border-radius:10px;transition:.15s;white-space:nowrap}
 .topnav a.nav-cta,.topnav a.nav-logout{color:#fff;background:var(--teal);font-weight:800}
+/* "Switch to the other side" button — visually distinct from the nav links so a
+   dual (owner + Paw Homie) account never confuses the two sides. */
+.topnav a.nav-switch{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--teal);
+  color:var(--teal);background:var(--paper);font-weight:800;border-radius:999px;padding:6px 13px;margin-left:6px}
+.topnav a.nav-switch:hover{background:var(--tint);color:var(--teal-dk)}
+.topnav a.nav-switch svg{width:16px;height:16px;flex:none}
 .topnav a.nav-cta:active{transform:scale(.96)}
 .topnav a.nav-hide-mobile{display:none}
 @media(min-width:900px){

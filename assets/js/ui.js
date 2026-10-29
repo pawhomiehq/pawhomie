@@ -167,24 +167,37 @@ function renderNav(active){
     // admin sees the panel only — no consumer app, no messages
     links += '<a data-go="admin" class="nav-admin '+(active==='admin'?'on':'')+'">Admin panel</a>'+
              '<a data-go="__logout" class="nav-logout">Log out</a>';
-  } else if (R.isSitter() && !R.isOwner()){
-    // pure Paw Homie
-    links += '<a data-go="sitterDashboard" class="nav-hide-mobile '+(active==='sitterDashboard'?'on':'')+'">Home</a>'+
-             '<a data-go="requests" class="nav-hide-mobile '+(active==='requests'?'on':'')+'">Requests</a>'+
-             '<a data-go="availability" class="nav-hide-mobile '+(active==='availability'?'on':'')+'">Availability</a>'+
-             '<a data-go="messages" class="nav-hide-mobile '+(active==='messages'?'on':'')+'">Messages</a>'+
-             '<a data-go="settings" class="nav-hide-mobile '+(active==='settings'?'on':'')+'">Account</a>';
   } else {
-    // owner (or someone who is both)
-    links += '<a data-go="dashboard" class="nav-hide-mobile '+(active==='dashboard'?'on':'')+'">Home</a>'+
-             '<a data-go="search" class="nav-hide-mobile '+(active==='search'?'on':'')+'">Search</a>'+
-             '<a data-go="bookings" class="nav-hide-mobile '+(active==='bookings'?'on':'')+'">My bookings</a>'+
-             '<a data-go="favorites" class="nav-hide-mobile '+(active==='favorites'?'on':'')+'">Favorites</a>';
-    if (R.isSitter()){
-      links += '<a data-go="sitterDashboard" class="nav-hide-mobile '+(active==='sitterDashboard'?'on':'')+'">Paw Homie</a>';
+    // Signed-in consumer: pet owner, Paw Homie, or both. The top nav shows
+    // ONE side at a time (never a mix), plus a clearly-labelled button to
+    // switch to the other side — so the two accounts don't overlap.
+    var dual = R.isOwner() && R.isSitter();
+    var showSitterNav = (R.isSitter() && !R.isOwner()) || (dual && onSitterSide);
+    function nav(dest, label){
+      return '<a data-go="'+dest+'" class="nav-hide-mobile '+(active===dest?'on':'')+'">'+label+'</a>';
     }
-    links += '<a data-go="messages" class="nav-hide-mobile '+(active==='messages'?'on':'')+'">Messages</a>'+
-             '<a data-go="settings" class="nav-hide-mobile '+(active==='settings'?'on':'')+'">Account</a>';
+    if (showSitterNav){
+      // --- Paw Homie (sitter) side ---
+      links += nav('sitterDashboard','Home')+
+               nav('requests','Requests')+
+               nav('availability','Availability')+
+               nav('messages','Messages')+
+               nav('settings','Account');
+      if (dual){
+        links += '<a data-go="dashboard" class="nav-switch nav-hide-mobile" title="Go to your pet-owner account">'+icon('user',16)+'<span>Switch to pet owner</span></a>';
+      }
+    } else {
+      // --- pet owner side ---
+      links += nav('dashboard','Home')+
+               nav('search','Search')+
+               nav('bookings','My bookings')+
+               nav('favorites','Favorites')+
+               nav('messages','Messages')+
+               nav('settings','Account');
+      if (dual){
+        links += '<a data-go="sitterDashboard" class="nav-switch nav-hide-mobile" title="Go to your Paw Homie account">'+icon('paw',16)+'<span>Switch to Paw Homie</span></a>';
+      }
+    }
   }
 
   // Notifications bell + profile avatar — visible on mobile AND desktop for

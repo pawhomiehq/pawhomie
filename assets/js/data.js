@@ -1101,9 +1101,7 @@ window.db = {
     }
     var sid = await this.mySitterId();
     if (!sid) return Object.assign({ earnings:0, upcoming:0, rating:'5.0', pending:0 }, rateInfo(false));
-    var founding = false;
-    try { var sp = await sb.from('sitter_profiles').select('is_founding').eq('id', sid).single();
-          founding = !!(sp.data && sp.data.is_founding); } catch(e){}
+    var founding = await this.isFounding(sid);   // flag OR active-promo safety net
     var info = rateInfo(founding);
     var sRate = info.feeRate;
     var bk = await sb.from('bookings').select('subtotal, total, status, start_date').eq('sitter_id', sid);
@@ -1336,9 +1334,18 @@ window.db = {
 
   /* Is this sitter a Founding Paw Homie? (for the badge) */
   async isFounding(sitterProfileId) {
-    if (!LIVE()) return false;
+    if (!LIVE()) return !!(window.MOCK.application && window.MOCK.application.is_founding);
+    var F = (CONFIG.FEES) || {};
     try { var r = await sb.from('sitter_profiles').select('is_founding').eq('id', sitterProfileId).single();
-      return !!(r.data && r.data.is_founding); } catch(e){ return false; }
+      if (r.data && r.data.is_founding) return true; } catch(e){}
+    // Safety net: while the founding promo is active and spots remain, every
+    // Paw Homie qualifies — so the 90%/10% rate shows even before the DB flag
+    // is backfilled. Once the cap is hit (or the promo ends), this is false.
+    if (F.FOUNDING_ACTIVE){
+      try { var fc = await sb.from('sitter_profiles').select('id', { count:'exact', head:true }).eq('is_founding', true);
+            if ((fc.count || 0) < (F.FOUNDING_CAP || 100)) return true; } catch(e){}
+    }
+    return false;
   },
 
   /* Save the quiz result. Passing unlocks the application form but does
