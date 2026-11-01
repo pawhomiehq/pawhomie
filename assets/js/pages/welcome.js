@@ -204,16 +204,16 @@ Pages.welcome = {
           <div class="km-cols">
             <div class="km-col">
               <div class="km-label">COMPETITION</div>
-              <div class="km-badge gray">Keeps 80%</div>
+              <div class="km-badge gray">You keep 80%</div>
               <div class="km-amt gray">$148.80</div>
-              <div class="km-sub">You keep from $186</div>
+              <div class="km-sub">from a $186 week</div>
             </div>
             <div class="km-vs">VS</div>
             <div class="km-col">
               <div class="km-label" style="color:var(--teal)">PAWHOMIE</div>
-              <div class="km-badge green">Keeps 85%</div>
+              <div class="km-badge green">You keep 85%</div>
               <div class="km-amt green">$158.10</div>
-              <div class="km-sub">You keep from $186</div>
+              <div class="km-sub">from a $186 week</div>
               <div class="km-more">+$9.30 more / week</div>
             </div>
           </div>
