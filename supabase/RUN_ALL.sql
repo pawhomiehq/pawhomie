@@ -465,9 +465,12 @@ drop policy if exists "admin reads all profiles" on profiles;
 create policy "admin reads all profiles" on profiles for select
   using ( is_admin() );
 
--- If you already seeded demo sitters, approve them so they still show in search:
-update sitter_profiles set status = 'approved', quiz_passed = true, quiz_score = 100
-where status = 'draft';
+-- NOTE: Do NOT auto-approve sitters here. (Removed a blanket
+--   "update sitter_profiles set status='approved' where status='draft'"
+-- that would approve every pending Paw Homie each time this file is re-run,
+-- bypassing admin review.) Real sitters are approved only by the admin in the
+-- admin panel. To approve the demo seed sitters, run 02_seed.sql, which sets
+-- their status explicitly — never this file.
 
 
 -- ==================== 11_admin_oversight.sql ====================
@@ -1192,3 +1195,15 @@ update sitter_profiles sp
   from ranked r
  where sp.id = r.id
    and r.rn <= greatest(0, 100 - (select count(*) from sitter_profiles where is_founding = true));
+
+-- ==================== 19_payments.sql ====================
+-- (was missing from RUN_ALL) Payment tracking columns on bookings.
+alter table bookings add column if not exists payment_intent_id text;
+alter table bookings add column if not exists payment_status text not null default 'none';
+alter table bookings add column if not exists paid_at timestamptz;
+
+-- ==================== 28_dual_role.sql ====================
+-- (was missing from RUN_ALL) Backfill older sitter-only accounts as owners too.
+update profiles
+set is_owner = true
+where is_sitter = true and is_owner is distinct from true;

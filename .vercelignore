@@ -1,0 +1,6 @@
+# Keep backend + tooling OFF the public web host.
+# These are deployed to Supabase, not served to browsers. Without this,
+# anyone could fetch /supabase/RUN_ALL.sql, the edge-function source, or
+# the CLI .temp files (which include your DB pooler URL) from your domain.
+supabase/
+README.md
