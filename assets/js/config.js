@@ -51,7 +51,7 @@ window.CONFIG = {
 
   // Stripe publishable key (safe to expose — it's the public half).
   // Test key starts with pk_test_, live key with pk_live_.
-  STRIPE_PUBLISHABLE_KEY: 'pk_test_51U8uzoHaSru9fsWpgu5hUKfOwp8yG2fgdNLduLl38GidA5GjXCQXst2FMC39IVo7jDhqtnyZqUbAYffyF0of9rPC004MBgVm4u'
+  STRIPE_PUBLISHABLE_KEY: 'pk_live_51U8uzoHaSru9fsWpkX7C9VlBbkSueX9QAR2Z41Hd9ufw7dvucI4bokHRSa3wwlD1TnVaTWMYCeStm2VySqnnqWnw00cFLJnGQu'
 };
 
 /* Until you paste real values above, the app runs on mock data so the
