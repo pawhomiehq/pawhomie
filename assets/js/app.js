@@ -42,13 +42,14 @@ window.App._confetti = function(){
   // flops, the tail wags. Layered back-to-front.
   p.innerHTML =
     '<div class="dogwrap"><div class="dog3d">'+
-      '<img class="leg legHindFar"  src="assets/img/dog/legback.png"  alt="" draggable="false">'+
-      '<img class="leg legForeFar"  src="assets/img/dog/legfront.png" alt="" draggable="false">'+
       '<img class="tail"            src="assets/img/dog/tail.png"     alt="" draggable="false">'+
-      '<img class="body"            src="assets/img/dog/body.png"     alt="" draggable="false">'+
-      '<img class="leg legHindNear" src="assets/img/dog/legback.png"  alt="" draggable="false">'+
+      '<img class="leg legBackFar"  src="assets/img/dog/legback.png"  alt="" draggable="false">'+
+      '<img class="leg legForeFar"  src="assets/img/dog/legfront.png" alt="" draggable="false">'+
+      '<img class="leg legBackNear" src="assets/img/dog/legback.png"  alt="" draggable="false">'+
       '<img class="leg legForeNear" src="assets/img/dog/legfront.png" alt="" draggable="false">'+
-      '<img class="ear"             src="assets/img/dog/ear.png"      alt="" draggable="false">'+
+      '<img class="body"            src="assets/img/dog/body.png"     alt="" draggable="false">'+
+      '<img class="earR"            src="assets/img/dog/ear.png"      alt="" draggable="false">'+
+      '<img class="earL"            src="assets/img/dog/ear.png"      alt="" draggable="false">'+
     '</div></div>';
 
   // The walk is driven by the Web Animations API so a tap can speed it up from
