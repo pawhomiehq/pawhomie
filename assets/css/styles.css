@@ -293,7 +293,7 @@ button{font-family:inherit}
 /* toast + puppy */
 .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%) translateY(20px);z-index:80;background:var(--teal-dk);color:#fff;font-weight:700;font-size:16px;padding:12px 18px;border-radius:99px;box-shadow:var(--sh-lift);opacity:0;transition:.3s var(--ease);pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.puppy{position:fixed;bottom:64px;left:-160px;z-index:25;pointer-events:none;width:120px}
+.puppy{position:fixed;bottom:64px;left:-160px;z-index:25;pointer-events:none;width:130px}
 /* the dog itself is tappable (the rest of the box stays click-through) */
 .puppy img{pointer-events:auto;cursor:pointer;-webkit-user-select:none;user-select:none}
 @media(min-width:900px){ .puppy{bottom:6px} }
@@ -301,13 +301,30 @@ button{font-family:inherit}
 @media(max-width:700px){ .puppy{display:none} }
 .puppy.walk-css{animation:walkAcross 11s linear forwards}   /* fallback when Web Animations API is unavailable */
 @keyframes walkAcross{from{left:-160px}to{left:100vw}}
-/* real puppy artwork */
-.puppy .bounce{width:120px;animation:bob .5s ease-in-out infinite;transform-origin:center bottom}
-.puppy .dog-body{width:120px;height:auto;display:block}
-@keyframes bob{50%{transform:translateY(-4px)}}
-/* tap reaction: a hop */
-.puppy.jump .bounce{animation:pupjump .6s ease-out}
-@keyframes pupjump{0%{transform:translateY(0)}30%{transform:translateY(-34px)}55%{transform:translateY(-6px)}78%{transform:translateY(-18px)}100%{transform:translateY(0)}}
+/* 3D puppy assembled from parts: body bobs, 4 legs walk, ear flops, tail wags */
+.puppy .dog3d{position:relative;width:130px;height:74px;animation:dogbob .32s ease-in-out infinite}
+.puppy .dog3d img{position:absolute;display:block}
+.puppy .body{left:0;top:2px;width:130px;z-index:4}
+.puppy .tail{left:3px;top:15px;width:38px;z-index:2;transform-box:fill-box;transform-origin:82% 58%;animation:wag .32s ease-in-out infinite}
+.puppy .ear{left:83px;top:9px;width:31px;z-index:6;transform-box:fill-box;transform-origin:52% 22%;animation:flop .34s ease-in-out infinite}
+.puppy .leg{width:28px;transform-box:fill-box;transform-origin:top center}
+.puppy .legHindFar{left:30px;top:47px;z-index:1;filter:brightness(.86)}
+.puppy .legForeFar{left:72px;top:47px;z-index:1;filter:brightness(.86)}
+.puppy .legHindNear{left:41px;top:49px;z-index:5}
+.puppy .legForeNear{left:83px;top:49px;z-index:5}
+.puppy .legHindFar,.puppy .legForeNear{animation:stepA .32s linear infinite}
+.puppy .legForeFar,.puppy .legHindNear{animation:stepB .32s linear infinite}
+@keyframes stepA{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-3px) rotate(5deg)}}
+@keyframes stepB{0%,100%{transform:translateY(-3px) rotate(5deg)}50%{transform:translateY(0) rotate(-4deg)}}
+@keyframes wag{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(16deg)}}
+@keyframes flop{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(11deg)}}
+@keyframes dogbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.5px)}}
+/* tap reaction: a hop + a faster walk */
+.puppy.jump .dogwrap{animation:pupjump .6s ease-out}
+@keyframes pupjump{0%{transform:translateY(0)}30%{transform:translateY(-32px)}55%{transform:translateY(-6px)}78%{transform:translateY(-16px)}100%{transform:translateY(0)}}
+.puppy.dash .leg{animation-duration:.17s}
+.puppy.dash .tail{animation-duration:.14s}
+.puppy.dash .ear{animation-duration:.17s}
 
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001s !important;animation-iteration-count:1 !important;transition-duration:.01s !important}

@@ -38,10 +38,18 @@ window.App._confetti = function(){
 /* walking puppy mascot */
 (function(){
   var p=document.getElementById('puppy');
+  // 3D puppy built from separate parts so each one moves: 4 legs walk, the ear
+  // flops, the tail wags. Layered back-to-front.
   p.innerHTML =
-    '<div class="bounce">'+
-      '<img class="dog-body" src="assets/img/dog/dog-body.png" alt="" draggable="false">'+
-    '</div>';
+    '<div class="dogwrap"><div class="dog3d">'+
+      '<img class="leg legHindFar"  src="assets/img/dog/legback.png"  alt="" draggable="false">'+
+      '<img class="leg legForeFar"  src="assets/img/dog/legfront.png" alt="" draggable="false">'+
+      '<img class="tail"            src="assets/img/dog/tail.png"     alt="" draggable="false">'+
+      '<img class="body"            src="assets/img/dog/body.png"     alt="" draggable="false">'+
+      '<img class="leg legHindNear" src="assets/img/dog/legback.png"  alt="" draggable="false">'+
+      '<img class="leg legForeNear" src="assets/img/dog/legfront.png" alt="" draggable="false">'+
+      '<img class="ear"             src="assets/img/dog/ear.png"      alt="" draggable="false">'+
+    '</div></div>';
 
   // The walk is driven by the Web Animations API so a tap can speed it up from
   // wherever it currently is (changing a CSS animation's duration would make it
