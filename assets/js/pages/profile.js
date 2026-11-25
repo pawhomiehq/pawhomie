@@ -1,3 +1,12 @@
+// Price rows for the sticky estimate card — rebuilt when the real "from" rate loads.
+function profileEstRows(rate){
+  var q = Booking.quote(rate);
+  return '<div class="prow"><span class="m">'+fmtRange(Booking.state.startDate, Booking.state.endDate)+' · '+q.nights+' night'+(q.nights>1?'s':'')+'</span><span>'+Booking.money(q.subtotal)+'</span></div>'+
+    '<div class="prow"><span class="m">Service fee</span><span>'+Booking.money(q.fee)+'</span></div>'+
+    '<div class="prow"><span class="m">'+q.taxLabel+'</span><span>'+Booking.money(q.tax)+'</span></div>'+
+    '<div class="prow total"><span>Total</span><span>'+Booking.money(q.total)+'</span></div>';
+}
+
 Pages.profile = {
   render(){ var s=App.currentSitter; var first=UI.esc(s.name.split(' ')[0]);
     var guest = !!(window.Role && Role.isGuest());
@@ -5,20 +14,26 @@ Pages.profile = {
     return `
   <div class="page" style="padding-top:0;padding-left:0;padding-right:0">
     <div style="position:relative">
-      ${UI.photo('cover','height:220px;border-radius:0 0 28px 28px',true)}
+      ${UI.photo('cover','height:220px;border-radius:0 0 28px 28px;object-position:center 30%',true)}
       <div class="back" data-go="search" style="position:absolute;top:14px;left:16px">\u2039</div>
     </div>
     <div class="wrap" style="max-width:820px">
-      <div style="display:flex;gap:14px;align-items:center;margin-top:-34px;position:relative">
+      <div style="display:flex;gap:14px;align-items:flex-end;margin-top:-40px;position:relative">
         ${UI.avatar(s.initial,{size:70,fs:24,gold:s.gold,border:true})}
-        <div style="flex:1;padding-top:30px">
-          <div class="row-sb"><div style="font-size:20px;font-weight:900">${esc(s.name)}</div><div class="stars">${s.reviews>0 ? '\u2605 '+s.rating+' <small class="muted">('+s.reviews+')</small>' : '<small class="muted">New</small>'}</div></div>
-          <div class="verified" style="margin-top:2px">${UI.icon('check',14)} ID & background verified</div>
+        <div style="flex:1;min-width:0;padding-bottom:2px">
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+            <span style="font-size:20px;font-weight:900">${esc(s.name)}</span>
+            <span class="stars" style="font-size:14px">${s.reviews>0 ? '\u2605 '+s.rating+' <small class="muted">('+s.reviews+')</small>' : '<small class="muted">New</small>'}</span>
+          </div>
         </div>
+      </div>
+      <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="verified">${UI.icon('check',14)} ID & background verified</span>
+        <span id="foundingSlot"></span>
       </div>
       <div class="grid g2" style="margin-top:16px">
         <div>
-          <div class="card rate-card"><div><div class="label" style="margin:0">From</div><div class="big-rate">$${s.rate} <span>/ night</span></div></div>${UI.tag(s.reply,'gold')}</div>
+          <div class="card rate-card"><div><div class="label" style="margin:0">From</div><div class="big-rate" id="pRateFrom">$${s.rate} <span>/ night</span></div></div></div>
           <div class="vcta" id="videoCta"><div class="vic">${UI.icon('video',20)}</div>
             <div style="flex:1"><div style="font-weight:800;font-size:14px">Meet ${first} over video first</div><div class="muted" style="font-size:12px">Free 15-min intro call before you book</div></div>
             <span style="font-size:20px;color:var(--gold-dk)">\u203a</span></div>
@@ -34,11 +49,8 @@ Pages.profile = {
         </div>
         <div>
           <div class="card" style="padding:16px;position:sticky;top:80px">
-            <div class="big-rate" style="margin-bottom:8px">$${s.rate} <span>/ night</span></div>
-            <div class="prow"><span class="m">${fmtRange(Booking.state.startDate, Booking.state.endDate)} \u00b7 ${q.nights} night${q.nights>1?'s':''}</span><span>${Booking.money(q.subtotal)}</span></div>
-            <div class="prow"><span class="m">Service fee</span><span>${Booking.money(q.fee)}</span></div>
-            <div class="prow"><span class="m">${q.taxLabel}</span><span>${Booking.money(q.tax)}</span></div>
-            <div class="prow total"><span>Total</span><span>${Booking.money(q.total)}</span></div>
+            <div class="big-rate" id="pRateEst" style="margin-bottom:8px">$${s.rate} <span>/ night</span></div>
+            <div id="pEstRows">${profileEstRows(s.rate)}</div>
             ${guest
               ? `<button class="btn" data-auth="signup" style="margin-top:10px">Sign up to book</button>
                  <button class="btn ghost" data-auth="signup" style="margin-top:10px">Sign up to message</button>
@@ -60,16 +72,28 @@ Pages.profile = {
     var v=document.getElementById('videoCta');
     if(v) v.addEventListener('click', function(){ window.Video.openSheet(); });
 
-    // Founding Paw Homie badge (trust signal for owners)
+    // Founding Paw Homie badge (trust signal for owners) — sits neatly in the trust row.
     if (App.currentSitter && db.isFounding){
       db.isFounding(App.currentSitter.id).then(function(f){
         if (!f) return;
-        var host = document.querySelector('.verified');
-        if (host){
-          var b = document.createElement('div');
-          b.innerHTML = '<span class="tag" style="background:var(--gold);color:#4A360A;margin-top:8px;display:inline-flex">⭐ Founding Paw Homie</span>';
-          host.parentNode.insertBefore(b.firstChild, host.nextSibling);
-        }
+        var slot = document.getElementById('foundingSlot');
+        if (slot) slot.innerHTML = '<span class="tag" style="background:var(--gold);color:#4A360A;display:inline-flex;align-items:center;gap:4px">⭐ Founding Paw Homie</span>';
+      }).catch(function(){});
+    }
+
+    // "From" price = the sitter's CHEAPEST enabled service (e.g. a $20 drop-in),
+    // not their nightly rate — so it matches what's shown under Services & rates.
+    if (App.currentSitter && db.getSitterServices){
+      db.getSitterServices(App.currentSitter.id).then(function(services){
+        if (!services || !services.length) return;
+        var minRate = services.reduce(function(m, sv){ return (sv.price > 0 && sv.price < m) ? sv.price : m; }, Infinity);
+        if (!isFinite(minRate) || minRate <= 0) return;
+        var fromEl = document.getElementById('pRateFrom');
+        var estEl  = document.getElementById('pRateEst');
+        var rowsEl = document.getElementById('pEstRows');
+        if (fromEl) fromEl.innerHTML = '$' + minRate + ' <span>/ night</span>';
+        if (estEl)  estEl.innerHTML  = '$' + minRate + ' <span>/ night</span>';
+        if (rowsEl) rowsEl.innerHTML = profileEstRows(minRate);
       }).catch(function(){});
     }
 

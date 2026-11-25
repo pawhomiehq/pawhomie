@@ -38,15 +38,10 @@ window.App._confetti = function(){
 /* walking puppy mascot */
 (function(){
   var p=document.getElementById('puppy');
-  p.innerHTML = '<svg viewBox="0 0 120 90" width="104" height="78"><g class="bounce">'+
-    '<path class="tail" d="M14 40 C 2 36 4 24 12 26 C 8 32 14 34 20 38 Z" fill="#D99A2E"/>'+
-    '<ellipse cx="60" cy="60" rx="40" ry="24" fill="#EBB042"/>'+
-    '<rect x="34" y="66" width="9" height="18" rx="4" fill="#D99A2E"/><rect x="78" y="66" width="9" height="18" rx="4" fill="#D99A2E"/>'+
-    '<rect x="50" y="68" width="9" height="16" rx="4" fill="#EBB042"/><rect x="64" y="68" width="9" height="16" rx="4" fill="#EBB042"/>'+
-    '<circle cx="94" cy="44" r="20" fill="#EBB042"/><path class="ear" d="M84 30 C 78 20 88 18 92 26 Z" fill="#D99A2E"/>'+
-    '<circle cx="100" cy="42" r="3.2" fill="#22302E"/><circle cx="108" cy="48" r="3.6" fill="#22302E"/>'+
-    '<path d="M104 54 q4 3 8 0" stroke="#22302E" stroke-width="2" fill="none" stroke-linecap="round"/>'+
-    '<rect x="74" y="56" width="18" height="6" rx="3" fill="#21706F"/></g></svg>';
+  p.innerHTML =
+    '<div class="bounce">'+
+      '<img class="dog-body" src="assets/img/dog/dog-body.png" alt="" draggable="false">'+
+    '</div>';
 
   // The walk is driven by the Web Animations API so a tap can speed it up from
   // wherever it currently is (changing a CSS animation's duration would make it

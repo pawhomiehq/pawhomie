@@ -526,14 +526,30 @@ window.db = {
     var res = await sb.from('sitter_cards').select('*');
     if (res.error) { console.error('getSitters:', res.error.message); return []; }
     var cards = (res.data || []).map(toCard);
-    var svc = await sb.from('services').select('sitter_id, kind').eq('enabled', true);
-    if (!svc.error && svc.data) {
-      var byId = {};
-      svc.data.forEach(function(r){ (byId[r.sitter_id] = byId[r.sitter_id] || []).push(r.kind); });
-      cards.forEach(function(c){ c.services = byId[c.id] || []; });
-    }
+    await this._applyFromRates(cards);
     if (serviceFilter) cards = cards.filter(function(c){ return (c.services||[]).indexOf(serviceFilter) > -1; });
     if (area) cards = cards.filter(inArea);
+    return cards;
+  },
+
+  /* Every sitter card shows the SAME "from" price everywhere (search, favorites,
+     profile): the cheapest enabled service, and the list of services offered.
+     Used wherever sitter cards are built so prices never disagree. */
+  async _applyFromRates(cards) {
+    if (!LIVE() || !cards || !cards.length) return cards;
+    var ids = cards.map(function(c){ return c.id; });
+    var svc = await sb.from('services').select('sitter_id, kind, price').eq('enabled', true).in('sitter_id', ids);
+    if (svc.error || !svc.data) return cards;
+    var byId = {}, minById = {};
+    svc.data.forEach(function(r){
+      (byId[r.sitter_id] = byId[r.sitter_id] || []).push(r.kind);
+      var p = Number(r.price);
+      if (p > 0 && (minById[r.sitter_id] == null || p < minById[r.sitter_id])) minById[r.sitter_id] = p;
+    });
+    cards.forEach(function(c){
+      c.services = byId[c.id] || [];
+      if (minById[c.id] != null) c.rate = minById[c.id];
+    });
     return cards;
   },
 
@@ -888,7 +904,9 @@ window.db = {
       .select('sitter:sitter_cards(*)')
       .eq('owner_id', user.id);
     if (res.error) { console.error('getFavorites:', res.error.message); return []; }
-    return (res.data || []).filter(function(r){ return r.sitter; }).map(function(r){ return toCard(r.sitter); });
+    var cards = (res.data || []).filter(function(r){ return r.sitter; }).map(function(r){ return toCard(r.sitter); });
+    await this._applyFromRates(cards);   // show the same "from" price as search/profile
+    return cards;
   },
 
   async toggleFavorite(sitterId, makeFav) {
